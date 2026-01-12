@@ -1,6 +1,6 @@
 export async function GET(request) {
   try {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://plexarisgpt-production.up.railway.app';
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
@@ -36,7 +36,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://plexarisgpt-production.up.railway.app';
 
     const response = await fetch(`${backendUrl}/api/orders`, {
       method: 'POST',

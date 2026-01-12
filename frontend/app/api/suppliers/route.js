@@ -1,6 +1,6 @@
 export async function GET(request) {
   try {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://plexarisgpt-production.up.railway.app';
     
     const response = await fetch(`${backendUrl}/api/suppliers`, {
       method: 'GET',
