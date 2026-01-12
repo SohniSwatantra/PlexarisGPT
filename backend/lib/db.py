@@ -24,15 +24,14 @@ def get_connection_pool():
             )
         
         try:
-            # Create connection pool with production-optimized settings
-            # Enable TCP keepalives to reduce idle SSL disconnects (Neon recommendation)
-            # Note: statement_timeout is not supported with Neon pooled connections
+            # Create connection pool optimized for Neon serverless
+            # Use lower minconn to avoid stale connections when DB sleeps
             _connection_pool = pool.ThreadedConnectionPool(
-                minconn=5,  # Increased for better performance
-                maxconn=20,  # Increased for production load
+                minconn=1,  # Low min to handle Neon sleep/wake cycles
+                maxconn=10,  # Conservative max for serverless
                 dsn=database_url,
                 cursor_factory=RealDictCursor,
-                connect_timeout=5,
+                connect_timeout=10,  # Longer timeout for cold starts
                 keepalives=1,
                 keepalives_idle=30,
                 keepalives_interval=10,
