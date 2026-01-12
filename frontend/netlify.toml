@@ -1,23 +1,13 @@
 [build]
-  command = "npm run build"
+  command = "npm install && npm run build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
-  NPM_FLAGS = "--legacy-peer-deps"
 
-# Next.js on Netlify plugin handles SSR
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Redirects for SPA behavior
-[[redirects]]
-  from = "/api/*"
-  to = ":splat"
-  status = 200
-  force = false
-
-# Headers for security
 [[headers]]
   for = "/*"
   [headers.values]
