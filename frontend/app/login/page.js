@@ -27,17 +27,17 @@ export default function LoginPage() {
     // Simple demo credentials check
     if (email.toLowerCase().trim() === DEMO_EMAIL && password === DEMO_PASSWORD) {
       // Store session info
-      sessionStorage.setItem('userId', 'demo-admin-001');
+      sessionStorage.setItem('userId', 'demo-user-001');
       sessionStorage.setItem('userEmail', DEMO_EMAIL);
       sessionStorage.setItem('userName', 'Sohni Swatantra');
-      sessionStorage.setItem('userRole', 'admin');
-      localStorage.setItem('userId', 'demo-admin-001');
+      sessionStorage.setItem('userRole', 'customer');
+      localStorage.setItem('userId', 'demo-user-001');
       localStorage.setItem('userEmail', DEMO_EMAIL);
       localStorage.setItem('userName', 'Sohni Swatantra');
-      localStorage.setItem('userRole', 'admin');
+      localStorage.setItem('userRole', 'customer');
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Redirect to customer chat
+      router.push('/customer/chat');
     } else {
       setError("Invalid email or password");
       setLoading(false);
