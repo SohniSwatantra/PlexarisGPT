@@ -163,10 +163,10 @@ async def get_supplier_product_count(supplier_id: str) -> int:
         release_db_connection(conn)
 
 
-async def handle_supplier_rag_query(query: str, supplier_id: str):
+async def handle_supplier_rag_query(query: str, supplier_id: str, history: Optional[List[Dict]] = None):
     """
     Main Supplier RAG handler: embedding → search → LLM response → parse intent → execute actions
-    
+
     Returns response with products and action results.
     """
     # Validate inputs
