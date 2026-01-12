@@ -2,18 +2,19 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getNeonAuthClient } from '@/lib/neonAuthClient';
+import { useAuth } from '@/lib/useAuth';
 import SupplierMessage from '@/app/components/SupplierMessage';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://plexarisgpt-production.up.railway.app';
 
 export default function SupplierDashboard() {
   const router = useRouter();
-  const neonClient = getNeonAuthClient();
+  const { user, loading: authHookLoading, isAuthenticated, logout } = useAuth();
 
   const [userEmail, setUserEmail] = useState(null);
   const [supplierId, setSupplierId] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [notSupplier, setNotSupplier] = useState(false);
 
   const [supplier, setSupplier] = useState(null);
   const [products, setProducts] = useState([]);
@@ -82,50 +83,61 @@ export default function SupplierDashboard() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Wait for auth hook to finish loading
+      if (authHookLoading) return;
+
+      // If not authenticated, redirect to login
+      if (!isAuthenticated) {
+        router.replace('/login');
+        return;
+      }
+
       try {
-        const sessionResponse = await neonClient.getSession();
+        // Get email from localStorage (set during demo login)
+        const email = localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail');
 
-        if (sessionResponse?.data?.user?.email) {
-          const email = sessionResponse.data.user.email;
-          setUserEmail(email);
-
-          const response = await fetch(
-            `${API_URL}/api/suppliers/check-email/${encodeURIComponent(email)}`
-          );
-
-          if (response.ok) {
-            const data = await response.json();
-
-            if (!data.exists) {
-              router.replace('/auth/callback');
-              return;
-            }
-
-            setSupplierId(data.supplier_id);
-            setAuthLoading(false);
-            loadSupplierData(data.supplier_id);
-
-          } else {
-            router.replace('/login');
-          }
-        } else {
+        if (!email) {
           router.replace('/login');
+          return;
+        }
+
+        setUserEmail(email);
+
+        // Check if this email is a supplier
+        const response = await fetch(
+          `${API_URL}/api/suppliers/check-email/${encodeURIComponent(email)}`
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+
+          if (!data.exists) {
+            // User is not a supplier - show message instead of redirect loop
+            setNotSupplier(true);
+            setAuthLoading(false);
+            return;
+          }
+
+          setSupplierId(data.supplier_id);
+          setAuthLoading(false);
+          loadSupplierData(data.supplier_id);
+
+        } else {
+          setNotSupplier(true);
+          setAuthLoading(false);
         }
       } catch (err) {
-        router.replace('/login');
+        console.error('Auth check error:', err);
+        setNotSupplier(true);
+        setAuthLoading(false);
       }
     };
 
     checkAuth();
-  }, [router, loadSupplierData, neonClient]);
+  }, [router, loadSupplierData, authHookLoading, isAuthenticated]);
 
-  const handleLogout = async () => {
-    try {
-      await neonClient.signOut();
-      router.push('/login');
-    } catch (err) {
-      router.push('/login');
-    }
+  const handleLogout = () => {
+    logout();
   };
 
   const goToOnboarding = () => {
@@ -315,6 +327,44 @@ export default function SupplierDashboard() {
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-gray-800" />
           <p className="mt-4 text-sm" style={{ color: '#6b6b6b' }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (notSupplier) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center" style={{ background: '#faf9f7' }}>
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: '#f5f4f2' }}>
+            <svg className="w-8 h-8" style={{ color: '#6b6b6b' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: '#1a1a1a' }}>Not a Supplier</h2>
+          <p className="mb-6" style={{ color: '#6b6b6b' }}>
+            Your account ({userEmail}) is not registered as a supplier. Would you like to become one?
+          </p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => router.push('/supplier/onboarding')}
+              className="w-full py-3 px-4 rounded-lg font-medium transition-all"
+              style={{ background: '#1a1a1a', color: '#ffffff' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#333333'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#1a1a1a'}
+            >
+              Become a Supplier
+            </button>
+            <button
+              onClick={() => router.push('/customer/chat')}
+              className="w-full py-3 px-4 rounded-lg font-medium transition-all"
+              style={{ background: '#f5f4f2', color: '#1a1a1a' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#eae9e6'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#f5f4f2'}
+            >
+              Back to Chat
+            </button>
+          </div>
         </div>
       </div>
     );

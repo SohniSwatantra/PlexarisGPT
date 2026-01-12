@@ -55,6 +55,25 @@ async def generate_query_embedding(text: str):
     except Exception as e:
         return None
 
+async def generate_product_embedding(name: str, category: str = None, description: str = None):
+    """Generate embedding for product data.
+
+    Creates a text representation of the product combining name, category, and description,
+    then generates an embedding vector for semantic search.
+    """
+    # Build product text - prioritize name, then add category and description if available
+    parts = [name]
+    if category:
+        parts.append(category)
+    if description:
+        parts.append(description)
+
+    product_text = " ".join(parts)
+
+    # Use the same embedding generation as queries
+    return await generate_query_embedding(product_text)
+
+
 async def close_http_client():
     """Close the shared HTTP client on shutdown."""
     global http_client

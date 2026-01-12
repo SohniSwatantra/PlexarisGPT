@@ -1,9 +1,12 @@
 from typing import Optional, Dict, List
 from lib.db import get_db_connection
-from lib.embedding_utils import generate_query_embedding
+from lib.embedding_utils import generate_query_embedding, generate_product_embedding
 from lib.vector_search import search_products_by_embedding
 import uuid
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 async def get_products(filters: Dict = None):
     """Get products with optional filters."""
@@ -75,22 +78,25 @@ async def search_products(query: str, limit: int = 5):
 
 
 async def create_product(product_data: Dict) -> Dict:
-    """Create a new product."""
+    """Create a new product with embedding for RAG search."""
     conn = get_db_connection()
     try:
         product_id = str(uuid.uuid4())
-        
+        name = product_data.get('name')
+        category = product_data.get('category')
+        description = product_data.get('description')
+
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO products 
+            INSERT INTO products
             (id, supplier_id, name, category, description, price, image_url, stock_quantity, created_at, updated_at)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             product_id,
             product_data.get('supplier_id'),
-            product_data.get('name'),
-            product_data.get('category'),
-            product_data.get('description'),
+            name,
+            category,
+            description,
             product_data.get('price'),
             product_data.get('image_url'),
             product_data.get('stock_quantity', 0),
@@ -98,7 +104,22 @@ async def create_product(product_data: Dict) -> Dict:
             datetime.now()
         ))
         conn.commit()
-        
+
+        # Generate embedding for RAG search (non-blocking - product still created if this fails)
+        try:
+            embedding = await generate_product_embedding(name, category, description)
+            if embedding:
+                cursor.execute(
+                    "UPDATE products SET embedding = %s WHERE id = %s",
+                    (embedding, product_id)
+                )
+                conn.commit()
+                logger.info(f"Generated embedding for product {product_id}")
+            else:
+                logger.warning(f"Failed to generate embedding for product {product_id}")
+        except Exception as e:
+            logger.error(f"Error generating embedding for product {product_id}: {e}")
+
         return {"id": product_id, "message": "Product created successfully"}
     finally:
         from lib.db import release_db_connection
@@ -110,31 +131,36 @@ async def update_product(product_id: str, product_data: Dict) -> Dict:
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        
+
+        # Check if embedding-related fields are being updated
+        embedding_fields_changed = any(
+            field in product_data for field in ['name', 'category', 'description']
+        )
+
         # Build dynamic UPDATE query - only update fields that are provided
         updates = []
         values = []
-        
+
         if 'name' in product_data:
             updates.append("name = %s")
             values.append(product_data['name'])
-        
+
         if 'category' in product_data:
             updates.append("category = %s")
             values.append(product_data['category'])
-        
+
         if 'description' in product_data:
             updates.append("description = %s")
             values.append(product_data['description'])
-        
+
         if 'price' in product_data:
             updates.append("price = %s")
             values.append(product_data['price'])
-        
+
         if 'image_url' in product_data:
             updates.append("image_url = %s")
             values.append(product_data['image_url'])
-        
+
         if 'stock_quantity' in product_data:
             updates.append("stock_quantity = %s")
             values.append(product_data['stock_quantity'])
@@ -146,22 +172,49 @@ async def update_product(product_id: str, product_data: Dict) -> Dict:
         # Always update updated_at
         updates.append("updated_at = %s")
         values.append(datetime.now())
-        
+
         # Add product_id for WHERE clause
         values.append(product_id)
-        
+
         if not updates:
             return {"id": product_id, "message": "No fields to update"}
-        
+
         query = f"""
-            UPDATE products 
+            UPDATE products
             SET {', '.join(updates)}
             WHERE id = %s
         """
-        
+
         cursor.execute(query, tuple(values))
         conn.commit()
-        
+
+        # Regenerate embedding if name, category, or description changed
+        if embedding_fields_changed:
+            try:
+                # Get updated product data for embedding
+                cursor.execute(
+                    "SELECT name, category, description FROM products WHERE id = %s",
+                    (product_id,)
+                )
+                product = cursor.fetchone()
+                if product:
+                    embedding = await generate_product_embedding(
+                        product['name'],
+                        product['category'],
+                        product['description']
+                    )
+                    if embedding:
+                        cursor.execute(
+                            "UPDATE products SET embedding = %s WHERE id = %s",
+                            (embedding, product_id)
+                        )
+                        conn.commit()
+                        logger.info(f"Regenerated embedding for product {product_id}")
+                    else:
+                        logger.warning(f"Failed to regenerate embedding for product {product_id}")
+            except Exception as e:
+                logger.error(f"Error regenerating embedding for product {product_id}: {e}")
+
         return {"id": product_id, "message": "Product updated successfully"}
     finally:
         from lib.db import release_db_connection
