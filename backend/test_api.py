@@ -29,11 +29,11 @@ def test(name, method, endpoint, expected_status=200, data=None, params=None, he
         if method == "GET":
             response = requests.get(url, params=params, headers=headers, timeout=30)
         elif method == "POST":
-            response = requests.post(url, json=data, headers=headers, timeout=30)
+            response = requests.post(url, params=params, json=data, headers=headers, timeout=30)
         elif method == "PUT":
-            response = requests.put(url, json=data, headers=headers, timeout=30)
+            response = requests.put(url, params=params, json=data, headers=headers, timeout=30)
         elif method == "PATCH":
-            response = requests.patch(url, json=data, headers=headers, timeout=30)
+            response = requests.patch(url, params=params, json=data, headers=headers, timeout=30)
         elif method == "DELETE":
             response = requests.delete(url, params=params, headers=headers, timeout=30)
         else:
