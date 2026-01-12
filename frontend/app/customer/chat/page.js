@@ -9,7 +9,7 @@ import Message from '@/app/components/Message';
 
 export default function ChatPage() {
   const { t } = useI18n();
-  
+
   return (
     <Suspense fallback={<LoadingSpinner t={t} />}>
       <ChatContent />
@@ -19,17 +19,10 @@ export default function ChatPage() {
 
 function LoadingSpinner({ t }) {
   return (
-    <div className="min-h-dvh flex items-center justify-center" style={{
-      backgroundColor: '#343541',
-      backgroundImage: `
-        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.01) 2px, rgba(255, 255, 255, 0.01) 4px),
-        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 255, 255, 0.01) 2px, rgba(255, 255, 255, 0.01) 4px)
-      `,
-      backgroundSize: '20px 20px'
-    }}>
+    <div className="min-h-dvh flex items-center justify-center" style={{ background: '#faf9f7' }}>
       <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-(--primary)" />
-        <p className="mt-4 text-(--text-secondary)">{t('loading')}</p>
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-gray-800" />
+        <p className="mt-4 text-sm" style={{ color: '#6b6b6b' }}>{t('loading')}</p>
       </div>
     </div>
   );
@@ -49,6 +42,7 @@ function ChatContent() {
   const [sessionId, setSessionId] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const messagesEndRef = useRef(null);
 
 
@@ -71,25 +65,24 @@ function ChatContent() {
         setChatMessages([]);
         return;
       }
-      
+
       const response = await fetch(`/api/chat/sessions/${session}?userId=${internalUserId}`);
       if (!response.ok) {
         throw new Error(`Failed to load history: ${response.status}`);
       }
-      
+
       const data = await response.json();
       const messages = Array.isArray(data) ? data : (data?.messages || []);
-      
+
       if (messages && messages.length > 0) {
         setChatMessages(messages.map(msg => ({
           text: msg.content,
           isUser: msg.role === 'user',
           products: msg.products,
           cartAction: msg.cart_action,
-          isNewMessage: false  // Loaded from history - no animation
+          isNewMessage: false
         })));
       } else {
-        // Session exists but has no messages yet
         setChatMessages([]);
       }
     } catch (error) {
@@ -100,7 +93,7 @@ function ChatContent() {
   const createNewSession = useCallback(async ({ preserveMessages = false } = {}) => {
     try {
       if (!internalUserId) throw new Error('internalUserId not set');
-      
+
       const response = await fetch('/api/chat/sessions', {
         method: 'POST',
         headers: {
@@ -109,14 +102,13 @@ function ChatContent() {
         },
         body: JSON.stringify({ title: 'New Chat', userId: internalUserId })
       });
-      
+
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
+
       const data = await response.json();
       if (!data.session_id) throw new Error('No session_id');
-      
+
       setSessionId(data.session_id);
-      // OPTIMIZED: Reload sessions asynchronously (non-blocking)
       loadSessions().catch(() => {});
       if (!preserveMessages) {
         setChatMessages([]);
@@ -152,7 +144,6 @@ function ChatContent() {
     try {
       await fetch(`/api/chat/sessions/${sessionToDelete}?userId=${internalUserId}`, { method: 'DELETE' });
       const updated = await loadSessions();
-      // If we deleted the active session, switch to the next available or make a new one
       if (sessionId === sessionToDelete) {
         if (updated.length > 0) {
           const first = updated[0].id;
@@ -175,7 +166,6 @@ function ChatContent() {
     setShowSidebar(false);
   }, [router, loadChatHistory]);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, isTyping]);
@@ -208,23 +198,18 @@ function ChatContent() {
 
   const handleCheckout = useCallback(() => {
     if (cart.length === 0) return;
-    
-    // Calculate totals
+
     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const vat = subtotal * 0.21;
     const total = subtotal + vat;
-    
-    // Get supplier_id from first item (assuming all items are from same supplier)
     const supplierId = cart[0]?.supplier_id || '';
-    
-    // Save to sessionStorage
+
     sessionStorage.setItem('checkoutData', JSON.stringify({
       items: cart,
       supplierId: supplierId,
       totalAmount: total
     }));
-    
-    // Navigate to checkout
+
     router.push('/customer/checkout');
   }, [cart, router]);
 
@@ -244,7 +229,6 @@ function ChatContent() {
         if (!activeSession) throw new Error('No session available');
       }
 
-      // Call Railway backend directly to avoid Netlify function timeout
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://plexarisgpt-production.up.railway.app';
       const response = await fetch(`${backendUrl}/api/rag`, {
         method: 'POST',
@@ -259,22 +243,19 @@ function ChatContent() {
 
       if (!response.ok) throw new Error('RAG failed');
       const data = await response.json();
-      
-      // Handle checkout action from RAG
+
       if (data.checkout_action && data.checkout_action.action === 'redirect') {
-        // Navigate to checkout
         handleCheckout();
         return;
       }
-      
-      // Handle cart actions
+
       if (data.cart_action) {
         if (data.cart_action.action === 'add') {
           setCart(prev => {
             const existing = prev.find(item => item.id === data.cart_action.product.id);
             if (existing) {
               return prev.map(item =>
-                item.id === data.cart_action.product.id 
+                item.id === data.cart_action.product.id
                   ? { ...item, quantity: item.quantity + data.cart_action.quantity }
                   : item
               );
@@ -308,22 +289,21 @@ function ChatContent() {
           ).filter(item => item.quantity > 0));
         }
       }
-      
+
       setChatMessages(prev => [...prev, {
         text: data.response,
         isUser: false,
         products: data.products,
         cartAction: data.cart_action,
-        isNewMessage: true  // Mark as new message to trigger typing animation
+        isNewMessage: true
       }]);
-      // OPTIMIZED: Refresh sessions in background (don't block UI)
       loadSessions().catch(err => console.error('Failed to refresh sessions:', err));
     } catch (error) {
       console.error('Chat send failed:', error);
       setChatMessages(prev => [...prev, {
         text: 'Sorry, I encountered an error. Please try again.',
         isUser: false,
-        isNewMessage: true  // Mark as new message to trigger typing animation
+        isNewMessage: true
       }]);
     } finally {
       setIsTyping(false);
@@ -335,7 +315,6 @@ function ChatContent() {
     router.push('/login');
   }, [logout, router]);
 
-  // Initialize session from URL or create new one
   useEffect(() => {
     if (authLoading) return;
     if (!internalUserId) return;
@@ -351,7 +330,6 @@ function ChatContent() {
 
         if (paramSessionId && paramSessionId !== 'undefined') {
           setSessionId(paramSessionId);
-          // Load history in background - don't block UI
           loadChatHistory(paramSessionId).catch(err => console.error('Failed to load chat history:', err));
           return;
         }
@@ -359,14 +337,11 @@ function ChatContent() {
         if (existingSessions.length > 0) {
           const firstSessionId = existingSessions[0].id;
           setSessionId(firstSessionId);
-          // Load history in background - don't block UI
           loadChatHistory(firstSessionId).catch(err => console.error('Failed to load chat history:', err));
-          // Update URL to reflect the active session
           window.history.replaceState({}, '', `/customer/chat?session=${firstSessionId}`);
           return;
         }
 
-        // No sessions yet: stay empty; first send will create
         setSessionId(null);
         setChatMessages([]);
       } catch (err) {
@@ -381,90 +356,67 @@ function ChatContent() {
   if (authLoading) return <LoadingSpinner t={t} />;
 
   return (
-    <div className="min-h-dvh flex flex-col overflow-hidden" style={{
-      backgroundColor: '#343541',
-      backgroundImage: `
-        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.01) 2px, rgba(255, 255, 255, 0.01) 4px),
-        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 255, 255, 0.01) 2px, rgba(255, 255, 255, 0.01) 4px)
-      `,
-      backgroundSize: '20px 20px'
-    }}>
-      {/* Header - Mobile Optimized */}
-      <header className="flex-shrink-0 border-b border-(--border) glass-light sticky top-0 z-40 shadow-lg">
-        <div className="px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
-            {/* Left */}
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <button
-                onClick={() => setShowSidebar(!showSidebar)}
-                className="p-2.5 hover:bg-(--surface) rounded-lg text-(--text-secondary) hover:text-(--primary) transition-all hover:shadow-lg hover:shadow-(--primary)/20 touch-manipulation"
-                aria-label="Toggle sidebar"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <h1 className="text-xl font-semibold gradient-text truncate">{t('chat')}</h1>
-            </div>
-
-            {/* Right */}
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              <button
-                onClick={() => setShowCart(true)}
-                className="relative px-3 sm:px-4 py-2 btn-primary font-semibold rounded-lg transition-all hover:scale-105 text-sm sm:text-base touch-manipulation"
-              >
-                <span className="hidden sm:inline">Cart</span>
-                <span className="sm:hidden">🛒</span>
-                <span className="ml-1.5 inline-block px-2 py-0.5 bg-white/20 rounded text-xs font-bold">{cart.length}</span>
-              </button>
-
-              {/* Menu */}
-              <div className="relative group">
-                <button className="p-2 hover:bg-(--surface) rounded-lg text-(--text-secondary) hover:text-(--primary) transition-all hover:shadow-lg hover:shadow-(--primary)/20">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2m0 7a1 1 0 110-2 1 1 0 010 2m0 7a1 1 0 110-2 1 1 0 010 2" />
-                  </svg>
-                </button>
-                <div className="absolute right-0 mt-2 w-44 glass border border-(--border) rounded-lg shadow-2xl shadow-(--primary)/20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                  <button onClick={() => router.push('/customer/dashboard')} className="w-full text-left px-4 py-2.5 hover:bg-(--surface) hover:text-(--primary) text-sm transition-all rounded-t-lg">{t('orders')}</button>
-                  <button onClick={() => router.push('/customer/settings')} className="w-full text-left px-4 py-2.5 hover:bg-(--surface) hover:text-(--primary) text-sm border-t border-(--border) transition-all">{t('settings')}</button>
-                  <button onClick={handleLogout} className="w-full text-left px-4 py-2.5 hover:bg-(--error) hover:text-white text-sm border-t border-(--border) text-(--error) transition-all rounded-b-lg">{t('logout')}</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-dvh flex" style={{ background: '#faf9f7' }}>
       {/* Sidebar */}
-      {showSidebar && (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setShowSidebar(false)} />
-          <div className="fixed left-0 top-0 z-50 h-screen w-full sm:w-64 glass border-r border-(--border) shadow-2xl shadow-(--primary)/10 overflow-y-auto">
-            <div className="p-4 border-b border-(--border) sticky top-0 glass">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold gradient-text">History</h2>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={async () => {
-                      await createNewSession();
-                      setShowSidebar(false);
-                    }}
-                    className="text-xs px-2 py-1 rounded-md bg-(--surface) hover:bg-(--primary)/10 border border-(--border) hover:border-(--primary)"
-                  >
-                    New
-                  </button>
-                  <button onClick={() => setShowSidebar(false)} className="p-1.5 hover:bg-(--surface) rounded hover:text-(--primary) transition-all" aria-label="Close">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-[280px] transform transition-transform duration-200 ease-out lg:relative lg:translate-x-0 ${
+          showSidebar ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        style={{ background: '#ffffff', borderRight: '1px solid #e5e3e0' }}
+      >
+        <div className="flex flex-col h-full">
+          {/* Sidebar Header */}
+          <div className="flex items-center justify-between p-4" style={{ borderBottom: '1px solid #e5e3e0' }}>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#1a1a1a' }}>
+                <span className="text-white text-sm font-semibold">P</span>
               </div>
+              <span className="font-semibold text-[15px]" style={{ color: '#1a1a1a', letterSpacing: '-0.02em' }}>Plexaris</span>
             </div>
-            <div className="p-3 space-y-2">
+            <button
+              onClick={() => setShowSidebar(false)}
+              className="lg:hidden p-2 rounded-lg transition-colors"
+              style={{ color: '#6b6b6b' }}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* New Chat Button */}
+          <div className="p-3">
+            <button
+              onClick={async () => {
+                await createNewSession();
+                setShowSidebar(false);
+              }}
+              className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-[14px] font-medium transition-all"
+              style={{ background: '#f5f4f2', color: '#1a1a1a', border: '1px solid #e5e3e0' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#eeecea';
+                e.currentTarget.style.borderColor = '#999999';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#f5f4f2';
+                e.currentTarget.style.borderColor = '#e5e3e0';
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              New chat
+            </button>
+          </div>
+
+          {/* Chat List */}
+          <div className="flex-1 overflow-y-auto px-3 pb-3">
+            <p className="text-[11px] font-medium uppercase tracking-wider px-2 py-2" style={{ color: '#999999' }}>
+              Recent
+            </p>
+            <div className="space-y-1">
               {sessions.length === 0 ? (
-                <p className="text-(--text-secondary) text-sm text-center py-8">No chats</p>
+                <p className="text-sm px-2 py-8 text-center" style={{ color: '#999999' }}>No conversations yet</p>
               ) : (
                 sessions.map((s) => (
                   <div
@@ -473,83 +425,232 @@ function ChatContent() {
                     tabIndex={0}
                     onClick={() => switchSession(s.id)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchSession(s.id); } }}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg transition-all text-sm truncate cursor-pointer ${
-                      sessionId === s.id 
-                        ? 'btn-primary text-white shadow-lg' 
-                        : 'hover:bg-(--surface) hover:border hover:border-(--primary)/30 hover:shadow-md hover:shadow-(--primary)/20'
-                    }`}
+                    className="group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all"
+                    style={{
+                      background: sessionId === s.id ? '#f5f4f2' : 'transparent',
+                      color: sessionId === s.id ? '#1a1a1a' : '#6b6b6b'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (sessionId !== s.id) {
+                        e.currentTarget.style.background = '#f5f4f2';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (sessionId !== s.id) {
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-semibold truncate">{s.title}</p>
-                        <p className="text-xs opacity-70">{new Date(s.updated_at).toLocaleDateString()}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteSession(s.id);
-                        }}
-                        className="p-2 sm:p-1 rounded hover:bg-(--surface) text-(--text-secondary) hover:text-(--error) transition-all touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
-                        aria-label="Delete chat"
-                      >
-                        ×
-                      </button>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[14px] truncate" style={{ color: '#1a1a1a' }}>{s.title || 'Untitled'}</p>
+                      <p className="text-[12px]" style={{ color: '#999999' }}>{new Date(s.updated_at).toLocaleDateString()}</p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteSession(s.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded transition-all"
+                      style={{ color: '#999999' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#999999'}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 ))
               )}
             </div>
           </div>
-        </>
+
+          {/* User Section */}
+          <div className="p-3" style={{ borderTop: '1px solid #e5e3e0' }}>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-[14px] transition-all"
+              style={{ color: '#6b6b6b' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#f5f4f2'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Sign out
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Sidebar Overlay */}
+      {showSidebar && (
+        <div
+          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
+          onClick={() => setShowSidebar(false)}
+        />
       )}
 
-      <main className="flex-1 overflow-hidden flex flex-col relative" style={{
-        backgroundColor: '#343541',
-        backgroundImage: `
-          repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.01) 2px, rgba(255, 255, 255, 0.01) 4px),
-          repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 255, 255, 0.01) 2px, rgba(255, 255, 255, 0.01) 4px)
-        `,
-        backgroundSize: '20px 20px'
-      }}>
-        <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 relative z-10">
-          {chatMessages.map((msg, i) => (
-            <Message key={i} text={msg.text} isUser={msg.isUser} products={msg.products} onAddToCart={handleAddToCart} cartAction={msg.cartAction} isNewMessage={msg.isNewMessage} />
-          ))}
-          {isTyping && <Message text="" isUser={false} isTyping={true} />}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <div className="flex-shrink-0 border-t border-(--border) glass-light p-3 sm:p-4 shadow-2xl shadow-(--primary)/10 relative z-10">
-          <form onSubmit={handleChatSend} className="flex gap-2">
-            <input
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder={t('typeSomething')}
-              disabled={isTyping}
-              className="flex-1 bg-(--surface) border border-(--border) rounded-lg px-3 sm:px-4 py-3 sm:py-2 text-base sm:text-sm focus:outline-none focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/30 focus:shadow-lg focus:shadow-(--primary)/20 disabled:opacity-50 transition-all placeholder:text-(--text-secondary) touch-manipulation"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-            />
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <header className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid #e5e3e0', background: '#ffffff' }}>
+          <div className="flex items-center gap-3">
             <button
-              type="submit"
-              disabled={isTyping || !chatInput.trim()}
-              className="px-4 sm:px-6 py-3 sm:py-2 btn-primary rounded-lg font-semibold text-base sm:text-sm transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed touch-manipulation min-w-[80px]"
+              onClick={() => setShowSidebar(!showSidebar)}
+              className="lg:hidden p-2 rounded-lg transition-colors"
+              style={{ color: '#6b6b6b' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#f5f4f2'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
-              Send
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
             </button>
+            <h1 className="text-[15px] font-medium" style={{ color: '#1a1a1a' }}>Chat</h1>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Cart Button */}
+            <button
+              onClick={() => setShowCart(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium transition-all"
+              style={{ background: '#1a1a1a', color: '#ffffff' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#333333'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#1a1a1a'}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              <span className="hidden sm:inline">Cart</span>
+              {cart.length > 0 && (
+                <span className="px-1.5 py-0.5 rounded text-[12px] font-semibold" style={{ background: 'rgba(255,255,255,0.2)' }}>
+                  {cart.length}
+                </span>
+              )}
+            </button>
+
+            {/* Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-2 rounded-lg transition-colors"
+                style={{ color: '#6b6b6b' }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#f5f4f2'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2m0 7a1 1 0 110-2 1 1 0 010 2m0 7a1 1 0 110-2 1 1 0 010 2" />
+                </svg>
+              </button>
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+                  <div
+                    className="absolute right-0 mt-2 w-48 py-1 rounded-lg shadow-lg z-50"
+                    style={{ background: '#ffffff', border: '1px solid #e5e3e0' }}
+                  >
+                    <button
+                      onClick={() => { router.push('/customer/dashboard'); setShowMenu(false); }}
+                      className="w-full text-left px-4 py-2.5 text-[14px] transition-colors"
+                      style={{ color: '#1a1a1a' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#f5f4f2'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      Orders
+                    </button>
+                    <button
+                      onClick={() => { router.push('/customer/settings'); setShowMenu(false); }}
+                      className="w-full text-left px-4 py-2.5 text-[14px] transition-colors"
+                      style={{ color: '#1a1a1a' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#f5f4f2'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      Settings
+                    </button>
+                    <div style={{ height: '1px', background: '#e5e3e0', margin: '4px 0' }} />
+                    <button
+                      onClick={() => { handleLogout(); setShowMenu(false); }}
+                      className="w-full text-left px-4 py-2.5 text-[14px] transition-colors"
+                      style={{ color: '#ef4444' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Chat Messages */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+            {chatMessages.length === 0 && !isTyping && (
+              <div className="text-center py-20">
+                <div className="w-12 h-12 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: '#f5f4f2' }}>
+                  <svg className="w-6 h-6" style={{ color: '#6b6b6b' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold mb-2" style={{ color: '#1a1a1a' }}>How can I help you?</h2>
+                <p className="text-[15px]" style={{ color: '#6b6b6b' }}>Ask me about our products or what you're looking for</p>
+              </div>
+            )}
+            {chatMessages.map((msg, i) => (
+              <Message key={i} text={msg.text} isUser={msg.isUser} products={msg.products} onAddToCart={handleAddToCart} cartAction={msg.cartAction} isNewMessage={msg.isNewMessage} />
+            ))}
+            {isTyping && <Message text="" isUser={false} isTyping={true} />}
+            <div ref={messagesEndRef} />
+          </div>
+        </main>
+
+        {/* Input Area */}
+        <div className="px-4 py-4" style={{ borderTop: '1px solid #e5e3e0', background: '#ffffff' }}>
+          <form onSubmit={handleChatSend} className="max-w-3xl mx-auto">
+            <div
+              className="flex items-center gap-2 rounded-xl px-4 py-2"
+              style={{ background: '#f5f4f2', border: '1px solid #e5e3e0' }}
+            >
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Type your message..."
+                disabled={isTyping}
+                className="flex-1 bg-transparent text-[15px] focus:outline-none disabled:opacity-50"
+                style={{ color: '#1a1a1a' }}
+                autoComplete="off"
+              />
+              <button
+                type="submit"
+                disabled={isTyping || !chatInput.trim()}
+                className="p-2 rounded-lg transition-all disabled:opacity-30"
+                style={{ background: '#1a1a1a', color: '#ffffff' }}
+                onMouseEnter={(e) => {
+                  if (!isTyping && chatInput.trim()) e.currentTarget.style.background = '#333333';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#1a1a1a';
+                }}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </button>
+            </div>
           </form>
         </div>
-      </main>
+      </div>
 
       {/* Cart Sheet */}
       {showCart && (
-        <CartSheet 
-          items={cart} 
-          isOpen={showCart} 
+        <CartSheet
+          items={cart}
+          isOpen={showCart}
           onClose={() => setShowCart(false)}
           onUpdateQuantity={handleUpdateQuantity}
           onRemove={handleRemoveFromCart}

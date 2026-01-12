@@ -5,15 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { useI18n } from '@/lib/i18n';
 import { Suspense } from 'react';
-import { MessageCircle, Zap, BarChart3, Clock } from 'lucide-react';
 
 export default function CustomerDashboard() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-(--bg)">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#faf9f7' }}>
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-(--primary)" />
-          <p className="mt-4 text-(--text-secondary)">Loading dashboard…</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-gray-800" />
+          <p className="mt-4 text-sm" style={{ color: '#6b6b6b' }}>Loading dashboard...</p>
         </div>
       </div>
     }>
@@ -26,10 +25,10 @@ function CustomerDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const purchased = searchParams.get('purchased');
-  
+
   const { user, userType, internalUserId, loading: authLoading, isAuthenticated, logout } = useAuth();
   const { t } = useI18n();
-  
+
   const [orders, setOrders] = useState([]);
   const [suppliers, setSuppliers] = useState({});
   const [userInfo, setUserInfo] = useState(null);
@@ -38,10 +37,9 @@ function CustomerDashboardContent() {
   const [successMessage, setSuccessMessage] = useState('');
   const [expandedOrder, setExpandedOrder] = useState(null);
 
-  // Check authentication
   useEffect(() => {
     if (authLoading) return;
-    
+
     if (!isAuthenticated || !internalUserId || userType !== 'customer') {
       router.replace('/');
       return;
@@ -50,10 +48,9 @@ function CustomerDashboardContent() {
     loadCustomerData();
   }, [router, authLoading, isAuthenticated, userType, internalUserId]);
 
-  // Show purchase success message
   useEffect(() => {
     if (purchased) {
-      setSuccessMessage('✓ Order placed successfully! Your order is being processed.');
+      setSuccessMessage('Order placed successfully! Your order is being processed.');
       const timer = setTimeout(() => setSuccessMessage(''), 5000);
       return () => clearTimeout(timer);
     }
@@ -61,7 +58,6 @@ function CustomerDashboardContent() {
 
   const loadCustomerData = async () => {
     try {
-      // Get user info AND orders in parallel
       const [ordersRes, userRes] = await Promise.all([
         fetch(`/api/orders?userId=${internalUserId}`),
         fetch(`/api/users/${internalUserId}`)
@@ -73,10 +69,9 @@ function CustomerDashboardContent() {
         ordersList = Array.isArray(ordersData) ? ordersData : (ordersData.orders || []);
       }
 
-      // Fetch all supplier info in parallel before processing orders
       const supplierIds = [...new Set(ordersList.map(o => o.supplier_id))];
       const suppliersMap = {};
-      
+
       if (supplierIds.length > 0) {
         const supplierPromises = supplierIds.map(id =>
           fetch(`/api/suppliers/${id}`)
@@ -84,19 +79,16 @@ function CustomerDashboardContent() {
             .then(data => data ? [id, data.name] : [id, 'Unknown Supplier'])
             .catch(() => [id, 'Unknown Supplier'])
         );
-        
+
         const results = await Promise.all(supplierPromises);
         results.forEach(([id, name]) => {
           suppliersMap[id] = name;
         });
       }
-      
-      setSuppliers(suppliersMap);
 
-      // Only fetch items for expanded orders (lazy load)
+      setSuppliers(suppliersMap);
       setOrders(ordersList);
 
-      // Get user info
       if (userRes.ok) {
         const userData = await userRes.json();
         const actualData = userData.user || userData;
@@ -112,14 +104,13 @@ function CustomerDashboardContent() {
     }
   };
 
-  // Lazy load order items when expanded
   const loadOrderItems = async (orderId) => {
     if (expandedOrder === orderId) {
       setExpandedOrder(null);
       return;
     }
     setExpandedOrder(orderId);
-    
+
     setOrders(prev =>
       prev.map(order =>
         order.id === orderId && !order.items
@@ -157,84 +148,111 @@ function CustomerDashboardContent() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-(--bg)">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#faf9f7' }}>
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-(--primary)" />
-          <p className="mt-4 text-(--text-secondary)">Loading...</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-gray-800" />
+          <p className="mt-4 text-sm" style={{ color: '#6b6b6b' }}>Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-(--bg) text-(--text)">
-      {/* Main Dashboard */}
-      <nav className="bg-(--panel) backdrop-blur-xl border-b border-(--border)">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-6">
+    <div className="min-h-screen" style={{ background: '#faf9f7' }}>
+      {/* Navigation */}
+      <nav style={{ background: '#ffffff', borderBottom: '1px solid #e5e3e0' }}>
+        <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#1a1a1a' }}>
+              <span className="text-white text-sm font-bold">P</span>
+            </div>
             <div>
-              <p className="text-xs tracking-[0.14em] uppercase text-(--text-secondary)">{t('plexaris')}</p>
-              <h1 className="text-2xl font-semibold tracking-[0.08em]">{t('customerPortal')}</h1>
+              <span className="font-semibold text-[15px]" style={{ color: '#1a1a1a' }}>Plexaris</span>
+              <span className="text-[13px] ml-2" style={{ color: '#6b6b6b' }}>Orders</span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => router.push('/customer/chat')}
-              className="px-4 py-2 bg-(--bg-secondary) border border-(--border) text-(--text-secondary) hover:text-(--primary) hover:border-(--primary) rounded-lg transition-all font-semibold text-sm"
+              className="px-4 py-2 text-[14px] font-medium rounded-lg transition-all"
+              style={{ background: '#1a1a1a', color: '#ffffff' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#333333'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#1a1a1a'}
             >
-              {t('chat')}
+              Chat
             </button>
-
             <button
               onClick={() => router.push('/customer/settings')}
-              className="px-4 py-2 bg-(--bg-secondary) border border-(--border) text-(--text-secondary) hover:text-(--primary) hover:border-(--primary) rounded-lg transition-all font-semibold text-sm"
+              className="px-4 py-2 text-[14px] font-medium rounded-lg transition-colors"
+              style={{ color: '#6b6b6b' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#f5f4f2'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
-              {t('settings')}
+              Settings
             </button>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 bg-gradient-to-r from-(--primary) to-(--accent) text-white rounded-lg font-semibold transition-all shadow-lg shadow-(--primary)/20"
+              className="px-4 py-2 text-[14px] font-medium rounded-lg transition-colors"
+              style={{ color: '#ef4444' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
-              {t('logout')}
+              Sign out
             </button>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-5xl mx-auto px-6 py-8">
         {error && (
-          <div className="bg-red-500/10 border border-red-400/50 text-red-100 rounded-lg p-4 mb-6">
-            ✕ {error}
+          <div
+            className="rounded-lg p-4 mb-6 text-[14px]"
+            style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626' }}
+          >
+            {error}
           </div>
         )}
 
         {successMessage && (
-          <div className="bg-emerald-500/10 border border-emerald-400/50 text-emerald-100 rounded-lg p-4 mb-6 animate-in fade-in">
+          <div
+            className="rounded-lg p-4 mb-6 text-[14px]"
+            style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a' }}
+          >
             {successMessage}
           </div>
         )}
 
-        <div className="bg-(--bg-secondary)/80 backdrop-blur-xl rounded-2xl border border-(--border) shadow-lg shadow-(--primary)/10 p-6">
+        <div className="rounded-xl p-6" style={{ background: '#ffffff', border: '1px solid #e5e3e0' }}>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <p className="text-xs tracking-[0.12em] uppercase text-(--text-secondary)">{t('orders')}</p>
-              <h2 className="text-2xl font-semibold">{t('yourOrderHistory')}</h2>
+              <h1 className="text-[24px] font-semibold" style={{ color: '#1a1a1a' }}>Your orders</h1>
+              <p className="text-[14px] mt-1" style={{ color: '#6b6b6b' }}>View and track all your past orders</p>
             </div>
-            <span className="px-3 py-1 rounded-full bg-(--surface) text-(--text-secondary) text-xs border border-(--border) font-semibold">
+            <span
+              className="px-3 py-1.5 rounded-lg text-[13px] font-medium"
+              style={{ background: '#f5f4f2', color: '#6b6b6b' }}
+            >
               {orders.length} {orders.length === 1 ? 'order' : 'orders'}
             </span>
           </div>
-          
+
           {orders.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-5xl mb-3">📦</div>
-              <p className="text-(--text-secondary) text-lg">No orders yet</p>
-              <p className="text-(--text-secondary) text-sm mt-1">Browse suppliers and make your first purchase</p>
+            <div className="text-center py-16">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: '#f5f4f2' }}>
+                <svg className="w-7 h-7" style={{ color: '#999999' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <p className="font-medium text-[16px] mb-1" style={{ color: '#1a1a1a' }}>No orders yet</p>
+              <p className="text-[14px] mb-6" style={{ color: '#6b6b6b' }}>Start chatting to place your first order</p>
               <button
-                onClick={() => router.push('/customer/shop')}
-                className="mt-4 px-6 py-2 bg-gradient-to-r from-(--primary) to-(--accent) text-white rounded-lg font-semibold transition-all shadow-lg shadow-(--primary)/20"
+                onClick={() => router.push('/customer/chat')}
+                className="px-5 py-2.5 text-[14px] font-medium rounded-lg transition-all"
+                style={{ background: '#1a1a1a', color: '#ffffff' }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#333333'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#1a1a1a'}
               >
-                Start Shopping
+                Start shopping
               </button>
             </div>
           ) : (
@@ -242,7 +260,8 @@ function CustomerDashboardContent() {
               {orders.map((order) => (
                 <div
                   key={order.id}
-                  className="bg-(--surface)/50 border border-(--border)/50 rounded-xl overflow-hidden hover:border-(--primary)/30 hover:bg-(--surface) transition-all"
+                  className="rounded-xl overflow-hidden transition-all"
+                  style={{ background: '#faf9f7', border: '1px solid #e5e3e0' }}
                 >
                   <button
                     onClick={() => loadOrderItems(order.id)}
@@ -250,48 +269,49 @@ function CustomerDashboardContent() {
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <p className="font-semibold text-lg text-(--primary) uppercase tracking-[0.04em]">
+                        <p className="font-medium text-[15px]" style={{ color: '#1a1a1a' }}>
                           {suppliers[order.supplier_id] || 'Loading...'}
                         </p>
-                        <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${
-                          order.status === 'completed' ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-100' :
-                          order.status === 'pending' ? 'border-amber-400/40 bg-amber-400/10 text-amber-100' :
-                          'border-(--border) bg-(--surface) text-(--text-secondary)'
-                        }`}>
+                        <span
+                          className="px-2 py-0.5 rounded text-[12px] font-medium"
+                          style={{
+                            background: order.status === 'completed' ? '#f0fdf4' : order.status === 'pending' ? '#fffbeb' : '#f5f4f2',
+                            color: order.status === 'completed' ? '#16a34a' : order.status === 'pending' ? '#d97706' : '#6b6b6b',
+                            border: `1px solid ${order.status === 'completed' ? '#bbf7d0' : order.status === 'pending' ? '#fde68a' : '#e5e3e0'}`
+                          }}
+                        >
                           {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
                         </span>
                       </div>
-                      <p className="text-sm text-(--text-secondary)">
-                        {new Date(order.created_at).toLocaleDateString('en-US', { 
-                          weekday: 'short', 
-                          year: 'numeric', 
-                          month: 'short', 
+                      <p className="text-[13px]" style={{ color: '#6b6b6b' }}>
+                        {new Date(order.created_at).toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          year: 'numeric',
+                          month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit'
                         })}
                       </p>
-                      {order.items && order.items.length > 0 && (
-                        <p className="text-sm text-(--text-secondary) mt-1">
-                          {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
-                        </p>
-                      )}
                     </div>
-                    <div className="text-right flex flex-col items-end gap-2">
-                      <p className="text-lg font-semibold text-(--primary)">€{order.total_amount?.toFixed(2) || '0.00'}</p>
-                      <p className="text-xs text-(--text-secondary)">
-                        {order.itemsLoading ? 'Loading...' : (expandedOrder === order.id ? '▼ Hide items' : '▶ Show items')}
+                    <div className="text-right flex flex-col items-end gap-1">
+                      <p className="font-semibold text-[16px]" style={{ color: '#1a1a1a' }}>€{order.total_amount?.toFixed(2) || '0.00'}</p>
+                      <p className="text-[12px]" style={{ color: '#999999' }}>
+                        {order.itemsLoading ? 'Loading...' : (expandedOrder === order.id ? 'Hide details' : 'Show details')}
                       </p>
                     </div>
                   </button>
 
                   {expandedOrder === order.id && order.items && order.items.length > 0 && (
-                    <div className="border-t border-(--border)/50 bg-(--bg)/40 p-4 space-y-4">
+                    <div className="p-4 space-y-3" style={{ borderTop: '1px solid #e5e3e0', background: '#ffffff' }}>
                       {order.items.map((item, idx) => (
-                        <div key={idx} className="flex gap-4 items-start text-sm">
+                        <div key={idx} className="flex gap-3 items-start">
                           {item.image_url && (
-                            <div className="flex-shrink-0">
-                              <img 
+                            <div
+                              className="w-14 h-14 rounded-lg overflow-hidden shrink-0"
+                              style={{ background: '#f5f4f2', border: '1px solid #e5e3e0' }}
+                            >
+                              <img
                                 src={(() => {
                                   try {
                                     const url = item.image_url.trim();
@@ -307,27 +327,27 @@ function CustomerDashboardContent() {
                                   }
                                 })()}
                                 alt={item.name || 'Item'}
-                                className="w-20 h-20 object-cover rounded-lg border border-(--border)/50"
+                                className="w-full h-full object-cover"
                                 loading="lazy"
                                 crossOrigin="anonymous"
                                 onError={(e) => {
                                   const container = e.target.closest('div');
                                   if (container) {
                                     container.style.display = 'none';
-                                  } else {
-                                    e.target.style.display = 'none';
                                   }
                                 }}
                               />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-(--text) font-medium">{item.name || 'Item'}</p>
-                            <p className="text-(--text-secondary) text-xs">
-                              Qty: {item.quantity} × €{item.price?.toFixed(2) || '0.00'}
+                            <p className="font-medium text-[14px]" style={{ color: '#1a1a1a' }}>{item.name || 'Item'}</p>
+                            <p className="text-[12px]" style={{ color: '#6b6b6b' }}>
+                              {item.quantity} × €{item.price?.toFixed(2) || '0.00'}
                             </p>
                           </div>
-                          <p className="text-(--primary) font-semibold flex-shrink-0">€{(item.quantity * item.price)?.toFixed(2) || '0.00'}</p>
+                          <p className="font-medium text-[14px] shrink-0" style={{ color: '#1a1a1a' }}>
+                            €{(item.quantity * item.price)?.toFixed(2) || '0.00'}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -337,8 +357,6 @@ function CustomerDashboardContent() {
             </div>
           )}
         </div>
-
-
       </main>
     </div>
   );
