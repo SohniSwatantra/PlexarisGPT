@@ -1,0 +1,8 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Brain outline - left (gears) -->
+  <path d="M20 12C20 12 12 16 12 24C12 32 16 40 20 44C22 46 24 48 26 50" stroke="#334155" stroke-width="3" fill="none"/>
+  <!-- Brain outline - right (circuits) -->
+  <path d="M44 12C44 12 52 16 52 24C52 32 48 40 44 44C42 46 40 48 38 50" stroke="#06b6d4" stroke-width="3" fill="none"/>
+  <!-- Center P -->
+  <text x="32" y="40" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#e2e8f0" text-anchor="middle">P</text>
+</svg>

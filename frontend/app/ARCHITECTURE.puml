@@ -1,0 +1,99 @@
+@startuml Frontend Application Architecture
+
+skinparam {
+  backgroundColor #FAFAFA
+  componentStyle rectangle
+  linetype ortho
+  shadowing false
+}
+
+package "Pages" #E3F2FD {
+  [Login] as Login
+  [Customer Portal] as CustomerPages
+  [Root] as RootPage
+}
+
+package "API Routes" #FFF3E0 {
+  [Chat] as ChatAPI
+  [RAG] as RAGAPI
+  [Orders] as OrdersAPI
+  [Suppliers] as SuppliersAPI
+  [Users] as UsersAPI
+}
+
+package "Components" #E8F5E9 {
+  [CartSheet] as Cart
+  [Message] as Message
+  [ProfileEditor] as Profile
+}
+
+package "Utilities" #FFEBEE {
+  [useAuth Hook] as AuthHook
+  [useI18n Hook] as I18nHook
+  [neonAuthClient] as NeonAuth
+}
+
+database "Backend" #F3E5F5 {
+  [FastAPI] as Backend
+}
+
+cloud "External Services" #F0F0FF {
+  [Neon Auth] as NeonAuthService
+  [OpenRouter] as LLMService
+}
+
+' Page dependencies
+Login --> AuthHook
+Login --> I18nHook
+
+CustomerPages --> Cart
+CustomerPages --> Message
+CustomerPages --> Profile
+CustomerPages --> AuthHook
+CustomerPages --> I18nHook
+
+RootPage --> AuthHook
+
+' API routes
+ChatAPI --> Backend
+RAGAPI --> Backend
+OrdersAPI --> Backend
+SuppliersAPI --> Backend
+UsersAPI --> Backend
+
+' Component dependencies
+Cart --> OrdersAPI
+Message --> RAGAPI
+Profile --> UsersAPI
+
+' External services
+AuthHook --> NeonAuthService
+AuthHook --> NeonAuth
+
+Backend --> LLMService
+
+note right of Login
+  Entry point
+  Email/password auth
+  Role selection
+end note
+
+note right of CustomerPages
+  Chat, Dashboard
+  Checkout, Settings
+  Multi-language support
+end note
+
+note right of Cart
+  Order management
+  Product selection
+  Quantity adjustment
+end note
+
+note right of Backend
+  API Gateway
+  Business logic
+  Database
+end note
+
+@enduml

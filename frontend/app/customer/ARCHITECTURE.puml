@@ -1,0 +1,101 @@
+@startuml Customer Portal Architecture
+
+skinparam {
+  backgroundColor #FAFAFA
+  componentStyle rectangle
+  linetype ortho
+  shadowing false
+  packageBorderColor #CCCCCC
+  packageBackgroundColor #FFFFFF
+}
+
+package "Customer Portal" #E3F2FD {
+  [Chat Page] as Chat
+  [Dashboard] as Dashboard
+  [Checkout] as Checkout
+  [Settings] as Settings
+  [Shop Redirect] as Shop
+}
+
+package "Shared Components" #FFF3E0 {
+  [CartSheet] as Cart
+  [Message Display] as Message
+  [ProfileEditor] as Profile
+  [Auth Hook] as Auth
+  [i18n Hook] as I18n
+}
+
+package "API Routes" #E8F5E9 {
+  [/api/orders] as OrdersAPI
+  [/api/users] as UsersAPI
+  [/api/suppliers] as SuppliersAPI
+  [/api/order-items] as ItemsAPI
+}
+
+cloud "Backend Services" #FFEBEE {
+  [Order Handler] as OrderHandler
+  [User Handler] as UserHandler
+  [Supplier Handler] as SupplierHandler
+}
+
+database "Database" #F3E5F5 {
+  [orders] as OrdersDB
+  [users] as UsersDB
+  [suppliers] as SuppliersDB
+  [order_items] as ItemsDB
+}
+
+' Page dependencies
+Chat --> Cart : manages cart
+Chat --> Message : displays messages
+Chat --> Auth : verifies user
+Chat --> I18n : translations
+
+Dashboard --> Auth : verifies user
+Dashboard --> I18n : translations
+Dashboard --> OrdersAPI : fetch orders
+Dashboard --> UsersAPI : fetch profile
+Dashboard --> SuppliersAPI : fetch suppliers
+
+Checkout --> Cart : cart data
+Checkout --> Auth : verifies user
+Checkout --> I18n : translations
+Checkout --> OrdersAPI : create order
+
+Settings --> Profile : edit profile
+Settings --> Auth : verifies user
+Settings --> I18n : language switch
+
+Shop --> Chat : redirects
+
+' API to Backend
+OrdersAPI --> OrderHandler
+UsersAPI --> UserHandler
+SuppliersAPI --> SupplierHandler
+ItemsAPI --> OrderHandler
+
+' Backend to Database
+OrderHandler --> OrdersDB
+OrderHandler --> ItemsDB
+UserHandler --> UsersDB
+SupplierHandler --> SuppliersDB
+
+note right of Chat
+  Primary entry point
+  AI-powered shopping
+  Voice & text input
+end note
+
+note right of Dashboard
+  Order history
+  Account overview
+  Purchase tracking
+end note
+
+note right of Checkout
+  Payment processing
+  Order confirmation
+  VAT calculation
+end note
+
+@enduml
