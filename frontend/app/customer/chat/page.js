@@ -526,7 +526,7 @@ function ChatContent() {
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               placeholder={t('typeSomething')}
-              disabled={isTyping || !sessionId}
+              disabled={isTyping}
               className="flex-1 bg-(--surface) border border-(--border) rounded-lg px-3 sm:px-4 py-3 sm:py-2 text-base sm:text-sm focus:outline-none focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/30 focus:shadow-lg focus:shadow-(--primary)/20 disabled:opacity-50 transition-all placeholder:text-(--text-secondary) touch-manipulation"
               autoComplete="off"
               autoCorrect="off"
@@ -534,7 +534,7 @@ function ChatContent() {
             />
             <button
               type="submit"
-              disabled={isTyping || !chatInput.trim() || !sessionId}
+              disabled={isTyping || !chatInput.trim()}
               className="px-4 sm:px-6 py-3 sm:py-2 btn-primary rounded-lg font-semibold text-base sm:text-sm transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed touch-manipulation min-w-[80px]"
             >
               Send
