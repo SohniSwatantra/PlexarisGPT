@@ -1,16 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function SuccessPage() {
+function SuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('order_id');
-
-  useEffect(() => {
-    // Cart already cleared in checkout page
-  }, []);
 
   return (
     <div className="min-h-dvh bg-(--background) flex items-center justify-center p-4">
@@ -45,5 +41,13 @@ export default function SuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center">Loading...</div>}>
+      <SuccessContent />
+    </Suspense>
   );
 }
