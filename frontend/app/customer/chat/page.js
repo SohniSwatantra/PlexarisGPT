@@ -244,7 +244,9 @@ function ChatContent() {
         if (!activeSession) throw new Error('No session available');
       }
 
-      const response = await fetch('/api/rag', {
+      // Call Railway backend directly to avoid Netlify function timeout
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://plexarisgpt-production.up.railway.app';
+      const response = await fetch(`${backendUrl}/api/rag`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
