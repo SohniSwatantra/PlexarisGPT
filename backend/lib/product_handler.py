@@ -138,7 +138,11 @@ async def update_product(product_id: str, product_data: Dict) -> Dict:
         if 'stock_quantity' in product_data:
             updates.append("stock_quantity = %s")
             values.append(product_data['stock_quantity'])
-        
+
+        if 'supplier_id' in product_data:
+            updates.append("supplier_id = %s")
+            values.append(product_data['supplier_id'])
+
         # Always update updated_at
         updates.append("updated_at = %s")
         values.append(datetime.now())
