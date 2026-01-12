@@ -26,12 +26,13 @@ export default function LoginPage() {
 
     // Simple demo credentials check
     if (email.toLowerCase().trim() === DEMO_EMAIL && password === DEMO_PASSWORD) {
-      // Store session info
-      sessionStorage.setItem('userId', 'demo-user-001');
+      // Store session info - use real UUID from database
+      const demoUserId = '2dc9283f-03d4-48aa-92c9-049976ffa72f';
+      sessionStorage.setItem('userId', demoUserId);
       sessionStorage.setItem('userEmail', DEMO_EMAIL);
       sessionStorage.setItem('userName', 'Sohni Swatantra');
       sessionStorage.setItem('userRole', 'customer');
-      localStorage.setItem('userId', 'demo-user-001');
+      localStorage.setItem('userId', demoUserId);
       localStorage.setItem('userEmail', DEMO_EMAIL);
       localStorage.setItem('userName', 'Sohni Swatantra');
       localStorage.setItem('userRole', 'customer');
