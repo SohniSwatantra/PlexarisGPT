@@ -39,6 +39,7 @@ function ChatContent() {
   const [isTyping, setIsTyping] = useState(false);
   const [cart, setCart] = useState([]);
   const [showCart, setShowCart] = useState(false);
+  const [showVoice, setShowVoice] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [showSidebar, setShowSidebar] = useState(false);
@@ -512,6 +513,20 @@ function ChatContent() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Voice Chat Button */}
+            <button
+              onClick={() => setShowVoice(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium transition-all"
+              style={{ background: '#1a1a1a', color: '#ffffff' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#333333'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#1a1a1a'}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+              <span className="hidden sm:inline">Voice</span>
+            </button>
+
             {/* Supplier Dashboard Button */}
             <button
               onClick={() => router.push('/supplier/dashboard')}
@@ -671,6 +686,78 @@ function ChatContent() {
           onCheckout={handleCheckout}
         />
       )}
+
+      {/* Voice Chat Modal - ElevenLabs */}
+      {showVoice && (
+        <VoiceModal onClose={() => setShowVoice(false)} />
+      )}
     </div>
+  );
+}
+
+function VoiceModal({ onClose }) {
+  useEffect(() => {
+    // Load ElevenLabs widget script
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup script on unmount
+      const existingScript = document.querySelector('script[src="https://unpkg.com/@elevenlabs/convai-widget-embed"]');
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
+  }, []);
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/50 z-50"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="fixed inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[500px] sm:h-[600px] z-50 rounded-2xl overflow-hidden shadow-2xl" style={{ background: '#faf9f7' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between p-4" style={{ borderBottom: '1px solid #e5e3e0' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: '#1a1a1a' }}>
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-[16px] font-semibold" style={{ color: '#1a1a1a' }}>Voice Assistant</h2>
+              <p className="text-[13px]" style={{ color: '#6b6b6b' }}>Powered by ElevenLabs</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: '#6b6b6b' }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#f5f4f2'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* ElevenLabs Widget Container */}
+        <div className="flex-1 h-[calc(100%-72px)] flex items-center justify-center p-6">
+          <div className="text-center w-full h-full flex flex-col items-center justify-center">
+            <elevenlabs-convai agent-id="agent_5601ket2xcyke17tcxzg6bxjwe0t"></elevenlabs-convai>
+            <p className="mt-4 text-[13px]" style={{ color: '#999999' }}>
+              Click the microphone to start talking
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
