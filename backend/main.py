@@ -319,6 +319,8 @@ async def sync_user(request: AuthSyncRequest):
     """
     Sync user after Neon Auth login/signup.
     Creates user if not exists, returns user info with role.
+    Note: users table has columns: id, email, business_name, address, contact_phone
+    Role is determined by checking if email exists in suppliers table.
     """
     from lib.db import get_db_connection, release_db_connection
     conn = None
@@ -332,51 +334,44 @@ async def sync_user(request: AuthSyncRequest):
         desired_role = request.desired_role
 
         # Check if user exists in users table
-        cursor.execute("SELECT id, name, email, role FROM users WHERE email = %s", (email,))
+        cursor.execute("SELECT id, email, business_name FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
 
         # Check if this email is a supplier
         cursor.execute("SELECT id, name, email FROM suppliers WHERE email = %s", (email,))
         supplier = cursor.fetchone()
 
+        # Determine role based on supplier status
+        user_role = 'supplier' if supplier else (desired_role or 'customer')
+        supplier_id = str(supplier['id']) if supplier else None
+
         if user:
             # Existing user - return their info
-            user_role = user.get('role', 'customer')
-            supplier_id = str(supplier['id']) if supplier else None
-
-            # If they're a supplier but role isn't set, update it
-            if supplier and user_role != 'supplier':
-                cursor.execute("UPDATE users SET role = 'supplier' WHERE id = %s", (user['id'],))
-                conn.commit()
-                user_role = 'supplier'
+            display_name = user.get('business_name') or name
 
             return {
                 "user_id": str(user['id']),
                 "email": user['email'],
-                "name": user['name'],
+                "name": display_name,
                 "user_role": user_role,
                 "supplier_id": supplier_id
             }
         else:
             # New user - create them
-            user_role = 'supplier' if supplier else (desired_role or 'customer')
-
             cursor.execute("""
-                INSERT INTO users (name, email, role, created_at)
-                VALUES (%s, %s, %s, NOW())
-                RETURNING id, name, email, role
-            """, (name, email, user_role))
+                INSERT INTO users (email, business_name)
+                VALUES (%s, %s)
+                RETURNING id, email, business_name
+            """, (email, name))
 
             new_user = cursor.fetchone()
             conn.commit()
 
-            supplier_id = str(supplier['id']) if supplier else None
-
             return {
                 "user_id": str(new_user['id']),
                 "email": new_user['email'],
-                "name": new_user['name'],
-                "user_role": new_user['role'],
+                "name": new_user.get('business_name') or name,
+                "user_role": user_role,
                 "supplier_id": supplier_id
             }
 
