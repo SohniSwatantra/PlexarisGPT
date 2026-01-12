@@ -306,6 +306,92 @@ async def health_check():
     }
 
 # ============================================================================
+# AUTH ENDPOINTS
+# ============================================================================
+
+class AuthSyncRequest(BaseModel):
+    email: str
+    name: Optional[str] = None
+    desired_role: Optional[str] = None
+
+@app.post("/api/auth/sync-user")
+async def sync_user(request: AuthSyncRequest):
+    """
+    Sync user after Neon Auth login/signup.
+    Creates user if not exists, returns user info with role.
+    """
+    from lib.db import get_db_connection, release_db_connection
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        email = request.email.lower().strip()
+        name = request.name or email.split('@')[0]
+        desired_role = request.desired_role
+
+        # Check if user exists in users table
+        cursor.execute("SELECT id, name, email, role FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+
+        # Check if this email is a supplier
+        cursor.execute("SELECT id, name, email FROM suppliers WHERE email = %s", (email,))
+        supplier = cursor.fetchone()
+
+        if user:
+            # Existing user - return their info
+            user_role = user.get('role', 'customer')
+            supplier_id = str(supplier['id']) if supplier else None
+
+            # If they're a supplier but role isn't set, update it
+            if supplier and user_role != 'supplier':
+                cursor.execute("UPDATE users SET role = 'supplier' WHERE id = %s", (user['id'],))
+                conn.commit()
+                user_role = 'supplier'
+
+            return {
+                "user_id": str(user['id']),
+                "email": user['email'],
+                "name": user['name'],
+                "user_role": user_role,
+                "supplier_id": supplier_id
+            }
+        else:
+            # New user - create them
+            user_role = 'supplier' if supplier else (desired_role or 'customer')
+
+            cursor.execute("""
+                INSERT INTO users (name, email, role, created_at)
+                VALUES (%s, %s, %s, NOW())
+                RETURNING id, name, email, role
+            """, (name, email, user_role))
+
+            new_user = cursor.fetchone()
+            conn.commit()
+
+            supplier_id = str(supplier['id']) if supplier else None
+
+            return {
+                "user_id": str(new_user['id']),
+                "email": new_user['email'],
+                "name": new_user['name'],
+                "user_role": new_user['role'],
+                "supplier_id": supplier_id
+            }
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Error syncing user: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            release_db_connection(conn)
+
+# ============================================================================
 # CHAT SESSION ROUTES (Customer Portal)
 # ============================================================================
 
