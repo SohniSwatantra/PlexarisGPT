@@ -141,10 +141,13 @@ export default function Home() {
             <span className="text-gradient-animated">MANAGE SUPPLIES</span>
           </h1>
 
-          <p className="text-[18px] leading-relaxed mb-12 max-w-2xl mx-auto animate-fade-up" style={{ color: '#b8b8b8', animationDelay: '0.2s' }}>
-            Order ingredients, track inventory, and manage suppliers — all through natural conversation.
-            Built for restaurants, hotels, and catering businesses.
+          <p className="text-[20px] leading-relaxed mb-6 max-w-2xl mx-auto animate-fade-up" style={{ color: '#b8b8b8', animationDelay: '0.2s', fontWeight: '500' }}>
+            Connect Horeca directly with Suppliers. Skip the middleman.
           </p>
+
+          <div className="inline-flex items-center px-6 py-3 rounded-full mb-12 animate-fade-up" style={{ background: '#D9F99D', animationDelay: '0.25s' }}>
+            <span className="text-[18px] font-semibold" style={{ color: '#1a1a1a' }}>Save 15-20% on margins.</span>
+          </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: '0.3s' }}>
             <Link
