@@ -351,28 +351,30 @@ async def health_check():
 
 @app.get("/api/debug/test-insert")
 async def test_insert():
-    """Debug endpoint to test basic insert with real UUID."""
+    """Debug endpoint to check users table and FK constraints."""
     from lib.db import get_db_connection, release_db_connection
-    from uuid import uuid4
 
     conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        test_user_id = str(uuid4())
-        cursor.execute("""
-            INSERT INTO chat_sessions (user_id, title)
-            VALUES (%s::uuid, %s)
-            RETURNING id
-        """, (test_user_id, "Debug Test"))
+        # Check users in the database
+        cursor.execute("SELECT id, email FROM users LIMIT 5")
+        users = [dict(row) for row in cursor.fetchall()]
 
-        result = cursor.fetchone()
-        session_id = str(result['id']) if result else None
-        conn.commit()
+        # Check FK constraints on chat_sessions
+        cursor.execute("""
+            SELECT tc.constraint_name, kcu.column_name, ccu.table_name AS foreign_table
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+            JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
+            WHERE tc.table_name = 'chat_sessions' AND tc.constraint_type = 'FOREIGN KEY'
+        """)
+        fk_constraints = [dict(row) for row in cursor.fetchall()]
 
         release_db_connection(conn)
-        return {"session_id": session_id, "user_id": test_user_id, "status": "success"}
+        return {"users": users, "fk_constraints": fk_constraints, "status": "success"}
     except Exception as e:
         import traceback
         error_detail = traceback.format_exc()
