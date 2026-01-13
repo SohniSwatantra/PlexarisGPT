@@ -47,14 +47,27 @@ def get_connection_pool():
 def get_db_connection():
     """Get database connection from pool."""
     global _connection_pool
-    pool = get_connection_pool()
+    pool_obj = get_connection_pool()
     max_retries = 3
-    
+
     for attempt in range(max_retries):
         conn = None
         try:
-            conn = pool.getconn()
-            
+            conn = pool_obj.getconn()
+        except pool.PoolError as e:
+            # Pool exhausted or in bad state - reset and retry
+            logger.warning(f"Pool error (attempt {attempt + 1}): {e}")
+            try:
+                _connection_pool.closeall()
+            except:
+                pass
+            _connection_pool = None
+            if attempt < max_retries - 1:
+                pool_obj = get_connection_pool()
+                continue
+            raise ConnectionError(f"Connection pool exhausted: {e}")
+
+        try:
             # Validate connection is still alive
             if conn.closed:
                 # Connection is closed, get a new one
@@ -66,7 +79,7 @@ def get_db_connection():
                 if attempt < max_retries - 1:
                     continue
                 raise ConnectionError("Connection is closed")
-            
+
             # Check connection status
             try:
                 # Check if connection is in a bad state by checking status attribute
@@ -91,14 +104,14 @@ def get_db_connection():
                     except:
                         pass
                     _connection_pool = None
-                    pool = get_connection_pool()
+                    pool_obj = get_connection_pool()
                     continue
                 raise ConnectionError("Connection status check failed")
-            
+
             # Set autocommit to False for explicit transaction control
             conn.autocommit = False
             return conn
-            
+
         except psycopg2.OperationalError as e:
             # Clean up bad connection
             if conn:
@@ -107,10 +120,10 @@ def get_db_connection():
                 except:
                     pass
                 conn = None
-            
+
             # If SSL connection closed, recreate pool and retry
             error_msg = str(e)
-            if ('SSL connection has been closed' in error_msg or 
+            if ('SSL connection has been closed' in error_msg or
                 'connection' in error_msg.lower() or
                 'closed' in error_msg.lower()) and attempt < max_retries - 1:
                 try:
@@ -118,7 +131,7 @@ def get_db_connection():
                 except:
                     pass
                 _connection_pool = None
-                pool = get_connection_pool()
+                pool_obj = get_connection_pool()
                 continue
             logger.error(f"OperationalError in get_db_connection: {error_msg}")
             raise
@@ -130,7 +143,7 @@ def get_db_connection():
                 except:
                     pass
                 conn = None
-            
+
             if attempt < max_retries - 1:
                 continue
             logger.error(f"Failed to get connection from pool: {str(e)}")
