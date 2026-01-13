@@ -359,18 +359,17 @@ async def test_insert():
         conn = get_db_connection()
         cursor = conn.cursor()
 
+        # Check actual column types
         cursor.execute("""
-            INSERT INTO chat_sessions (user_id, title)
-            VALUES (%s, %s)
-            RETURNING id
-        """, ("test-user-debug", "Debug Test"))
-
-        result = cursor.fetchone()
-        session_id = str(result['id']) if result else None
-        conn.commit()
+            SELECT column_name, data_type, is_nullable
+            FROM information_schema.columns
+            WHERE table_name = 'chat_sessions'
+            ORDER BY ordinal_position
+        """)
+        columns = [dict(row) for row in cursor.fetchall()]
 
         release_db_connection(conn)
-        return {"session_id": session_id, "status": "success"}
+        return {"columns": columns, "status": "success"}
     except Exception as e:
         import traceback
         error_detail = traceback.format_exc()
