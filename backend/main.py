@@ -351,25 +351,28 @@ async def health_check():
 
 @app.get("/api/debug/test-insert")
 async def test_insert():
-    """Debug endpoint to test basic insert."""
+    """Debug endpoint to test basic insert with real UUID."""
     from lib.db import get_db_connection, release_db_connection
+    from uuid import uuid4
 
     conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Check actual column types
+        test_user_id = str(uuid4())
         cursor.execute("""
-            SELECT column_name, data_type, is_nullable
-            FROM information_schema.columns
-            WHERE table_name = 'chat_sessions'
-            ORDER BY ordinal_position
-        """)
-        columns = [dict(row) for row in cursor.fetchall()]
+            INSERT INTO chat_sessions (user_id, title)
+            VALUES (%s::uuid, %s)
+            RETURNING id
+        """, (test_user_id, "Debug Test"))
+
+        result = cursor.fetchone()
+        session_id = str(result['id']) if result else None
+        conn.commit()
 
         release_db_connection(conn)
-        return {"columns": columns, "status": "success"}
+        return {"session_id": session_id, "user_id": test_user_id, "status": "success"}
     except Exception as e:
         import traceback
         error_detail = traceback.format_exc()
