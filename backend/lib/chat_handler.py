@@ -95,9 +95,13 @@ def create_chat_session(user_id: str, title: str = "New Chat") -> Optional[str]:
         
         return session_id
     except Exception as e:
-        logger.error(f"Failed to create chat session: {str(e)}")
+        import traceback
+        logger.error(f"Failed to create chat session: {str(e)}\n{traceback.format_exc()}")
         if conn:
-            conn.rollback()
+            try:
+                conn.rollback()
+            except:
+                pass
         return None
     finally:
         if conn:

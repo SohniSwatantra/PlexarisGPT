@@ -346,7 +346,7 @@ async def health_check():
         "database": "connected" if db_healthy else "disconnected",
         "stripe_configured": bool(os.getenv('STRIPE_SECRET_KEY')),
         "openrouter_configured": bool(os.getenv('OPENROUTER_API_KEY')),
-        "version": "2.0.1-chat-tables",
+        "version": "2.0.2-debug-errors",
     }
 
 @app.get("/api/debug/setup-chat-tables")
@@ -514,11 +514,13 @@ def create_chat_session_endpoint(request: Request, body: CreateChatSessionReques
         title = body.title or "New Chat"
         session_id = create_chat_session(user_id, title)
         if not session_id:
-            raise HTTPException(status_code=500, detail="Failed to create chat session")
+            raise HTTPException(status_code=500, detail="Failed to create chat session - check server logs")
         return {"session_id": session_id, "title": title}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to create chat session: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to create chat session")
+        raise HTTPException(status_code=500, detail=f"Failed to create chat session: {str(e)}")
 
 @app.get("/api/chat/sessions")
 def list_chat_sessions_endpoint(userId: str, limit: int = 50):
