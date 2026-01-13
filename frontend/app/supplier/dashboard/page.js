@@ -115,6 +115,7 @@ export default function SupplierDashboard() {
             // User is not a supplier - show message instead of redirect loop
             setNotSupplier(true);
             setAuthLoading(false);
+            setLoading(false);
             return;
           }
 
@@ -125,11 +126,13 @@ export default function SupplierDashboard() {
         } else {
           setNotSupplier(true);
           setAuthLoading(false);
+          setLoading(false);
         }
       } catch (err) {
         console.error('Auth check error:', err);
         setNotSupplier(true);
         setAuthLoading(false);
+        setLoading(false);
       }
     };
 
