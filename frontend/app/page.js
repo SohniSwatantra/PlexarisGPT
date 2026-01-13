@@ -109,22 +109,20 @@ export default function Home() {
       <section className="py-24 px-6" style={{ background: '#0a1628' }}>
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-[40px] font-bold mb-4" style={{ color: '#f5f0e1', fontFamily: 'var(--font-space-grotesk)' }}>Order with Voice or Text</h2>
+            <h2 className="text-[40px] font-bold mb-4" style={{ color: '#f5f0e1', fontFamily: 'var(--font-space-grotesk)' }}>Order with 🗣️ or Text</h2>
             <p className="text-[16px]" style={{ color: '#b8b8b8' }}>Find your preferred suppliers and manage inventory effortlessly - right from ChatGPT</p>
           </div>
 
           {/* Loom Video */}
-          <div className="rounded-2xl p-1 mb-12" style={{ background: 'linear-gradient(135deg, rgba(96, 165, 250, 0.3), rgba(74, 222, 128, 0.2))', boxShadow: '0 0 60px rgba(96, 165, 250, 0.15)' }}>
-            <div className="rounded-xl overflow-hidden aspect-video">
-              <iframe
-                src="https://www.loom.com/embed/9a3780f60ddf420dadff2a6e0dd51b87?autoplay=1&hide_owner=true&hide_share=true&hide_title=true&hideEmbedTopBar=true"
-                frameBorder="0"
-                allowFullScreen
-                allow="autoplay; fullscreen"
-                className="w-full h-full"
-                style={{ border: 'none' }}
-              />
-            </div>
+          <div className="rounded-2xl overflow-hidden mb-12" style={{ boxShadow: '0 0 60px rgba(96, 165, 250, 0.15)' }}>
+            <iframe
+              src="https://www.loom.com/embed/9a3780f60ddf420dadff2a6e0dd51b87?autoplay=1&hide_owner=true&hide_share=true&hide_title=true&hideEmbedTopBar=true"
+              frameBorder="0"
+              allowFullScreen
+              allow="autoplay; fullscreen"
+              className="w-full aspect-video"
+              style={{ border: 'none', display: 'block' }}
+            />
           </div>
 
           {/* Feature Icons */}
