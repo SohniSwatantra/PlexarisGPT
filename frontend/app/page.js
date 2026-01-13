@@ -113,14 +113,17 @@ export default function Home() {
             <p className="text-[16px]" style={{ color: '#b8b8b8' }}>Find your preferred suppliers and manage inventory effortlessly - right from ChatGPT</p>
           </div>
 
-          {/* Video Placeholder */}
+          {/* Loom Video */}
           <div className="rounded-2xl p-1 mb-12" style={{ background: 'linear-gradient(135deg, rgba(96, 165, 250, 0.3), rgba(74, 222, 128, 0.2))', boxShadow: '0 0 60px rgba(96, 165, 250, 0.15)' }}>
-            <div className="rounded-xl aspect-video flex items-center justify-center" style={{ background: '#0d1d35' }}>
-              <button className="w-20 h-20 rounded-full flex items-center justify-center transition-all" style={{ background: 'rgba(255,255,255,0.1)', border: '2px solid rgba(255,255,255,0.2)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.transform = 'scale(1)'; }}>
-                <svg className="w-8 h-8 ml-1" fill="#f5f0e1" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-              </button>
+            <div className="rounded-xl overflow-hidden aspect-video">
+              <iframe
+                src="https://www.loom.com/embed/9a3780f60ddf420dadff2a6e0dd51b87?autoplay=1&hide_owner=true&hide_share=true&hide_title=true&hideEmbedTopBar=true"
+                frameBorder="0"
+                allowFullScreen
+                allow="autoplay; fullscreen"
+                className="w-full h-full"
+                style={{ border: 'none' }}
+              />
             </div>
           </div>
 
