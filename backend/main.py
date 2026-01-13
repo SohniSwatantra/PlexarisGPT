@@ -63,6 +63,49 @@ async def lifespan(app: FastAPI):
         cursor.execute("SELECT version()")
         version = cursor.fetchone()
         logger.info(f"Database connected: {version.get('version', 'Unknown')[:50]}...")
+
+        # Ensure chat tables exist
+        cursor.execute("""
+            SELECT table_name FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name IN ('chat_sessions', 'chat_messages')
+        """)
+        existing_tables = [row['table_name'] for row in cursor.fetchall()]
+
+        if 'chat_sessions' not in existing_tables:
+            logger.info("Creating chat_sessions table...")
+            cursor.execute("""
+                CREATE TABLE chat_sessions (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id VARCHAR(255) NOT NULL,
+                    title VARCHAR(255) DEFAULT 'New Chat',
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    deleted_at TIMESTAMP WITH TIME ZONE
+                )
+            """)
+            cursor.execute("CREATE INDEX idx_chat_sessions_user_id ON chat_sessions(user_id)")
+            cursor.execute("CREATE INDEX idx_chat_sessions_updated_at ON chat_sessions(updated_at DESC)")
+            conn.commit()
+            logger.info("chat_sessions table created")
+
+        if 'chat_messages' not in existing_tables:
+            logger.info("Creating chat_messages table...")
+            cursor.execute("""
+                CREATE TABLE chat_messages (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    session_id UUID NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+                    role VARCHAR(20) NOT NULL,
+                    content TEXT NOT NULL,
+                    products JSONB,
+                    cart_action JSONB,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cursor.execute("CREATE INDEX idx_chat_messages_session_id ON chat_messages(session_id)")
+            cursor.execute("CREATE INDEX idx_chat_messages_session_created ON chat_messages(session_id, created_at)")
+            conn.commit()
+            logger.info("chat_messages table created")
+
         pool.putconn(conn)
     except Exception as e:
         logger.error(f"Database connection pool initialization failed: {str(e)}")
