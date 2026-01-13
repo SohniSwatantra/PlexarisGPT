@@ -121,8 +121,17 @@ async def get_supplier_by_id(supplier_id: str):
     """Get supplier information by ID from suppliers table."""
     import psycopg2
     import asyncio
+    import uuid
     from lib.db import release_db_connection
-    
+
+    # Validate UUID format to prevent database errors
+    if not supplier_id or supplier_id == 'undefined' or supplier_id == 'null':
+        return None
+    try:
+        uuid.UUID(supplier_id)
+    except (ValueError, AttributeError):
+        return None
+
     max_retries = 3
     for attempt in range(max_retries):
         conn = None

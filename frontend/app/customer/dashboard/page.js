@@ -71,7 +71,7 @@ function CustomerDashboardContent() {
         ordersList = Array.isArray(ordersData) ? ordersData : (ordersData.orders || []);
       }
 
-      const supplierIds = [...new Set(ordersList.map(o => o.supplier_id))];
+      const supplierIds = [...new Set(ordersList.map(o => o.supplier_id).filter(id => id && id !== 'undefined'))];
       const suppliersMap = {};
 
       if (supplierIds.length > 0) {
