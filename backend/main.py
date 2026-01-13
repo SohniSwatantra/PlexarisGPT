@@ -346,8 +346,41 @@ async def health_check():
         "database": "connected" if db_healthy else "disconnected",
         "stripe_configured": bool(os.getenv('STRIPE_SECRET_KEY')),
         "openrouter_configured": bool(os.getenv('OPENROUTER_API_KEY')),
-        "version": "2.0.2-debug-errors",
+        "version": "2.0.3-test-insert",
     }
+
+@app.get("/api/debug/test-insert")
+async def test_insert():
+    """Debug endpoint to test basic insert."""
+    from lib.db import get_db_connection, release_db_connection
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO chat_sessions (user_id, title)
+            VALUES (%s, %s)
+            RETURNING id
+        """, ("test-user-debug", "Debug Test"))
+
+        result = cursor.fetchone()
+        session_id = str(result['id']) if result else None
+        conn.commit()
+
+        release_db_connection(conn)
+        return {"session_id": session_id, "status": "success"}
+    except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        if conn:
+            try:
+                conn.rollback()
+            except:
+                pass
+            release_db_connection(conn)
+        return {"error": str(e), "traceback": error_detail, "status": "failed"}
 
 @app.get("/api/debug/setup-chat-tables")
 async def setup_chat_tables():
