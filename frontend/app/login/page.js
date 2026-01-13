@@ -46,21 +46,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col" style={{ background: '#faf9f7' }}>
+    <div className="min-h-dvh flex flex-col" style={{ background: '#141414' }}>
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #e5e3e0' }}>
+      <header className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #333333' }}>
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#1a1a1a' }}>
-            <span className="text-white text-sm font-semibold">P</span>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#F5C042' }}>
+            <span className="text-[#1a1a1a] text-sm font-semibold">P</span>
           </div>
-          <span className="font-semibold text-[15px]" style={{ color: '#1a1a1a', letterSpacing: '-0.02em' }}>Plexaris</span>
+          <span className="font-semibold text-[15px]" style={{ color: '#f5f0e1', letterSpacing: '-0.02em', fontFamily: 'var(--font-space-grotesk)' }}>Plexaris</span>
         </div>
         <button
           onClick={() => router.push("/signup")}
-          className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          style={{ color: '#6b6b6b' }}
-          onMouseEnter={(e) => e.target.style.background = '#f5f4f2'}
-          onMouseLeave={(e) => e.target.style.background = 'transparent'}
+          className="text-sm font-medium px-4 py-2 rounded-full transition-all uppercase tracking-wide"
+          style={{ color: '#b8b8b8', fontFamily: 'var(--font-space-grotesk)' }}
+          onMouseEnter={(e) => { e.target.style.background = '#1e1e1e'; e.target.style.color = '#F5C042'; }}
+          onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = '#b8b8b8'; }}
         >
           Sign up
         </button>
@@ -71,10 +71,10 @@ export default function LoginPage() {
         <div className="w-full max-w-[360px]">
           {/* Title */}
           <div className="text-center mb-8">
-            <h1 className="text-[28px] font-semibold mb-2" style={{ color: '#1a1a1a', letterSpacing: '-0.02em' }}>
+            <h1 className="text-[28px] font-bold mb-2 uppercase" style={{ color: '#f5f0e1', letterSpacing: '-0.02em', fontFamily: 'var(--font-space-grotesk)' }}>
               Welcome back
             </h1>
-            <p className="text-[15px]" style={{ color: '#6b6b6b' }}>
+            <p className="text-[15px]" style={{ color: '#777777' }}>
               Sign in to your account to continue
             </p>
           </div>
@@ -84,9 +84,9 @@ export default function LoginPage() {
             <div
               className="mb-4 px-4 py-3 rounded-lg text-sm"
               style={{
-                background: '#fef2f2',
-                border: '1px solid #fecaca',
-                color: '#dc2626'
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444'
               }}
             >
               {error}
@@ -98,7 +98,7 @@ export default function LoginPage() {
             <div>
               <label
                 className="block text-sm font-medium mb-2"
-                style={{ color: '#1a1a1a' }}
+                style={{ color: '#b8b8b8' }}
               >
                 Email
               </label>
@@ -109,17 +109,17 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 text-[15px] rounded-lg transition-all"
                 style={{
-                  background: '#ffffff',
-                  border: '1px solid #e5e3e0',
-                  color: '#1a1a1a',
+                  background: '#1e1e1e',
+                  border: '1px solid #333333',
+                  color: '#f5f0e1',
                   outline: 'none'
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = '#999999';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.05)';
+                  e.target.style.borderColor = '#F5C042';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(245, 192, 66, 0.1)';
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = '#e5e3e0';
+                  e.target.style.borderColor = '#333333';
                   e.target.style.boxShadow = 'none';
                 }}
                 required
@@ -129,7 +129,7 @@ export default function LoginPage() {
             <div>
               <label
                 className="block text-sm font-medium mb-2"
-                style={{ color: '#1a1a1a' }}
+                style={{ color: '#b8b8b8' }}
               >
                 Password
               </label>
@@ -141,17 +141,17 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 pr-16 text-[15px] rounded-lg transition-all"
                   style={{
-                    background: '#ffffff',
-                    border: '1px solid #e5e3e0',
-                    color: '#1a1a1a',
+                    background: '#1e1e1e',
+                    border: '1px solid #333333',
+                    color: '#f5f0e1',
                     outline: 'none'
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#999999';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.05)';
+                    e.target.style.borderColor = '#F5C042';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(245, 192, 66, 0.1)';
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = '#e5e3e0';
+                    e.target.style.borderColor = '#333333';
                     e.target.style.boxShadow = 'none';
                   }}
                   required
@@ -159,10 +159,10 @@ export default function LoginPage() {
                 <button
                   type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium transition-colors"
-                  style={{ color: '#6b6b6b' }}
+                  style={{ color: '#777777' }}
                   onClick={() => setShowPassword((v) => !v)}
-                  onMouseEnter={(e) => e.target.style.color = '#1a1a1a'}
-                  onMouseLeave={(e) => e.target.style.color = '#6b6b6b'}
+                  onMouseEnter={(e) => e.target.style.color = '#F5C042'}
+                  onMouseLeave={(e) => e.target.style.color = '#777777'}
                   tabIndex={-1}
                 >
                   {showPassword ? "Hide" : "Show"}
@@ -173,17 +173,24 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 text-[15px] font-medium rounded-lg transition-all"
+              className="w-full py-3 text-[15px] font-semibold rounded-full transition-all uppercase tracking-wide"
               style={{
-                background: loading ? '#6b6b6b' : '#1a1a1a',
-                color: '#ffffff',
-                cursor: loading ? 'not-allowed' : 'pointer'
+                background: loading ? '#777777' : '#F5C042',
+                color: '#1a1a1a',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontFamily: 'var(--font-space-grotesk)'
               }}
               onMouseEnter={(e) => {
-                if (!loading) e.target.style.background = '#333333';
+                if (!loading) {
+                  e.target.style.background = '#FFD060';
+                  e.target.style.boxShadow = '0 0 20px rgba(245, 192, 66, 0.3)';
+                }
               }}
               onMouseLeave={(e) => {
-                if (!loading) e.target.style.background = '#1a1a1a';
+                if (!loading) {
+                  e.target.style.background = '#F5C042';
+                  e.target.style.boxShadow = 'none';
+                }
               }}
             >
               {loading ? (
@@ -202,27 +209,27 @@ export default function LoginPage() {
 
           {/* Divider */}
           <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px" style={{ background: '#e5e3e0' }} />
-            <span className="text-sm" style={{ color: '#999999' }}>or</span>
-            <div className="flex-1 h-px" style={{ background: '#e5e3e0' }} />
+            <div className="flex-1 h-px" style={{ background: '#333333' }} />
+            <span className="text-sm" style={{ color: '#777777' }}>or</span>
+            <div className="flex-1 h-px" style={{ background: '#333333' }} />
           </div>
 
           {/* Google Sign In */}
           <button
             type="button"
-            className="w-full py-3 text-[15px] font-medium rounded-lg flex items-center justify-center gap-3 transition-all"
+            className="w-full py-3 text-[15px] font-medium rounded-full flex items-center justify-center gap-3 transition-all"
             style={{
-              background: '#ffffff',
-              border: '1px solid #e5e3e0',
-              color: '#1a1a1a'
+              background: 'transparent',
+              border: '1px solid #333333',
+              color: '#f5f0e1'
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = '#f5f4f2';
-              e.target.style.borderColor = '#999999';
+              e.currentTarget.style.background = '#1e1e1e';
+              e.currentTarget.style.borderColor = '#F5C042';
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = '#ffffff';
-              e.target.style.borderColor = '#e5e3e0';
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = '#333333';
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24">
@@ -235,13 +242,13 @@ export default function LoginPage() {
           </button>
 
           {/* Sign Up Link */}
-          <p className="text-center mt-6 text-[15px]" style={{ color: '#6b6b6b' }}>
+          <p className="text-center mt-6 text-[15px]" style={{ color: '#777777' }}>
             Don't have an account?{' '}
             <button
               type="button"
               onClick={() => router.push("/signup")}
-              className="font-medium transition-colors"
-              style={{ color: '#1a1a1a' }}
+              className="font-semibold transition-colors"
+              style={{ color: '#F5C042' }}
               onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
               onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
             >
@@ -252,8 +259,8 @@ export default function LoginPage() {
       </main>
 
       {/* Footer */}
-      <footer className="px-6 py-4" style={{ borderTop: '1px solid #e5e3e0' }}>
-        <div className="flex items-center justify-center gap-6 text-sm" style={{ color: '#999999' }}>
+      <footer className="px-6 py-4" style={{ borderTop: '1px solid #333333' }}>
+        <div className="flex items-center justify-center gap-6 text-sm" style={{ color: '#777777' }}>
           <span>Privacy Policy</span>
           <span>Terms of Service</span>
         </div>
