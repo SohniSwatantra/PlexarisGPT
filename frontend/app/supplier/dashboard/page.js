@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/useAuth';
 import SupplierMessage from '@/app/components/SupplierMessage';
 
@@ -380,13 +382,17 @@ export default function SupplierDashboard() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#F5C042' }}>
-                <span className="text-[#1a1a1a] text-sm font-bold">P</span>
-              </div>
-              <div>
-                <h1 className="text-[16px] font-semibold" style={{ color: '#f5f0e1', fontFamily: 'var(--font-space-grotesk)' }}>{supplier?.name || 'Supplier'}</h1>
-                <p className="text-[13px]" style={{ color: '#777777' }}>{products.length} products</p>
-              </div>
+              <Link href="/" className="flex items-center gap-3">
+                <Image
+                  src="/plexaris-logo.png"
+                  alt="Plexaris"
+                  width={40}
+                  height={40}
+                  className="object-contain"
+                />
+                <span className="text-[18px] font-semibold" style={{ color: '#f5f0e1', fontFamily: 'var(--font-space-grotesk)' }}>Plexaris</span>
+              </Link>
+              <span className="text-[13px] px-3 py-1 rounded-full" style={{ color: '#777777', background: '#252525' }}>{supplier?.name || 'Supplier'}</span>
             </div>
             <button
               onClick={handleLogout}

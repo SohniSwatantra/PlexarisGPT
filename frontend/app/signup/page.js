@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 import { getNeonAuthClient } from "@/lib/neonAuthClient";
 
 export default function SignupPage() {
@@ -73,12 +75,16 @@ export default function SignupPage() {
     <div className="min-h-dvh flex flex-col" style={{ background: '#141414' }}>
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #333333' }}>
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#F5C042' }}>
-            <span className="text-[#1a1a1a] text-sm font-semibold">P</span>
-          </div>
-          <span className="font-semibold text-[15px]" style={{ color: '#f5f0e1', letterSpacing: '-0.02em', fontFamily: 'var(--font-space-grotesk)' }}>Plexaris</span>
-        </div>
+        <Link href="/" className="flex items-center gap-3">
+          <Image
+            src="/plexaris-logo.png"
+            alt="Plexaris"
+            width={36}
+            height={36}
+            className="object-contain"
+          />
+          <span className="font-semibold text-[16px]" style={{ color: '#f5f0e1', fontFamily: 'var(--font-space-grotesk)' }}>Plexaris</span>
+        </Link>
         <button
           onClick={() => router.push("/login")}
           className="text-sm font-medium px-4 py-2 rounded-full transition-all uppercase tracking-wide"

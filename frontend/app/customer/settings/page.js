@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/useAuth';
 import { useI18n } from '@/lib/i18n';
 import { Suspense } from 'react';
@@ -72,25 +74,38 @@ function CustomerSettingsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-(--bg) text-(--text)">
-      <nav className="bg-(--panel) backdrop-blur-xl border-b border-(--border)">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-6">
-            <div>
-              <p className="text-xs tracking-[0.14em] uppercase text-(--text-secondary)">{t('plexaris')}</p>
-              <h1 className="text-2xl font-semibold tracking-[0.08em]">{t('settings')}</h1>
-            </div>
+    <div className="min-h-screen" style={{ background: '#141414', color: '#f5f0e1' }}>
+      <nav style={{ background: '#1a1a1a', borderBottom: '1px solid #333333' }}>
+        <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <Link href="/" className="flex items-center gap-3">
+              <Image
+                src="/plexaris-logo.png"
+                alt="Plexaris"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
+              <span className="text-[18px] font-semibold" style={{ color: '#f5f0e1', fontFamily: 'var(--font-space-grotesk)' }}>Plexaris</span>
+            </Link>
+            <span className="text-[14px] px-3 py-1 rounded-full" style={{ color: '#777777', background: '#252525' }}>{t('settings')}</span>
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.push('/customer/shop')}
-              className="px-4 py-2 bg-(--bg-secondary) border border-(--border) text-(--text-secondary) hover:text-(--primary) hover:border-(--primary) rounded-lg transition-all font-semibold text-sm"
+              onClick={() => router.push('/customer/chat')}
+              className="px-4 py-2 text-[14px] font-medium rounded-lg transition-colors"
+              style={{ color: '#b8b8b8' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#252525'; e.currentTarget.style.color = '#F5C042'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#b8b8b8'; }}
             >
-              {t('browseSuppliers')}
+              Chat
             </button>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 bg-gradient-to-r from-(--primary) to-(--accent) text-white rounded-lg font-semibold transition-all shadow-lg shadow-(--primary)/20"
+              className="px-4 py-2 text-[14px] font-medium rounded-lg transition-colors"
+              style={{ color: '#ef4444' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
               {t('logout')}
             </button>

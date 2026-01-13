@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/useAuth';
 import { useI18n } from '@/lib/i18n';
 import { Suspense } from 'react';
@@ -162,15 +164,16 @@ function CustomerDashboardContent() {
       {/* Navigation */}
       <nav style={{ background: '#1a1a1a', borderBottom: '1px solid #333333' }}>
         <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#F5C042' }}>
-              <span className="text-[#1a1a1a] text-sm font-bold">P</span>
-            </div>
-            <div>
-              <span className="font-semibold text-[15px]" style={{ color: '#f5f0e1', fontFamily: 'var(--font-space-grotesk)' }}>Plexaris</span>
-              <span className="text-[13px] ml-2" style={{ color: '#777777' }}>Orders</span>
-            </div>
-          </div>
+          <Link href="/" className="flex items-center gap-3">
+            <Image
+              src="/plexaris-logo.png"
+              alt="Plexaris"
+              width={40}
+              height={40}
+              className="object-contain"
+            />
+            <span className="text-[18px] font-semibold" style={{ color: '#f5f0e1', fontFamily: 'var(--font-space-grotesk)' }}>Plexaris</span>
+          </Link>
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push('/customer/chat')}

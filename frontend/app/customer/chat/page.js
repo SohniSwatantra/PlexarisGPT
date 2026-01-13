@@ -2,6 +2,8 @@
 
 import { Suspense, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/useAuth';
 import { useI18n } from '@/lib/i18n';
 import CartSheet from '@/app/components/CartSheet';
@@ -523,7 +525,16 @@ function ChatContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h1 className="text-[15px] font-semibold uppercase tracking-wide" style={{ color: '#f5f0e1', fontFamily: 'var(--font-space-grotesk)' }}>Chat</h1>
+            <Link href="/" className="flex items-center gap-2">
+              <Image
+                src="/plexaris-logo.png"
+                alt="Plexaris"
+                width={32}
+                height={32}
+                className="object-contain"
+              />
+              <span className="text-[16px] font-semibold" style={{ color: '#f5f0e1', fontFamily: 'var(--font-space-grotesk)' }}>Plexaris</span>
+            </Link>
           </div>
 
           <div className="flex items-center gap-2">
