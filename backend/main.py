@@ -346,7 +346,7 @@ async def health_check():
         "database": "connected" if db_healthy else "disconnected",
         "stripe_configured": bool(os.getenv('STRIPE_SECRET_KEY')),
         "openrouter_configured": bool(os.getenv('OPENROUTER_API_KEY')),
-        "version": "2.0.4-fix-tables",
+        "version": "2.0.5",
     }
 
 @app.get("/api/debug/fix-chat-tables")
