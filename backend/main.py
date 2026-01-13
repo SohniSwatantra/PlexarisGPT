@@ -346,12 +346,12 @@ async def health_check():
         "database": "connected" if db_healthy else "disconnected",
         "stripe_configured": bool(os.getenv('STRIPE_SECRET_KEY')),
         "openrouter_configured": bool(os.getenv('OPENROUTER_API_KEY')),
-        "version": "2.0.3-test-insert",
+        "version": "2.0.4-fix-tables",
     }
 
-@app.get("/api/debug/test-insert")
-async def test_insert():
-    """Debug endpoint to check users table and FK constraints."""
+@app.get("/api/debug/fix-chat-tables")
+async def fix_chat_tables():
+    """Fix chat tables - drop FK constraint and alter user_id to VARCHAR."""
     from lib.db import get_db_connection, release_db_connection
 
     conn = None
@@ -359,22 +359,33 @@ async def test_insert():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Check users in the database
-        cursor.execute("SELECT id, email FROM users LIMIT 5")
-        users = [dict(row) for row in cursor.fetchall()]
+        actions = []
 
-        # Check FK constraints on chat_sessions
+        # Drop FK constraint if exists
         cursor.execute("""
-            SELECT tc.constraint_name, kcu.column_name, ccu.table_name AS foreign_table
-            FROM information_schema.table_constraints tc
-            JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
-            JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
-            WHERE tc.table_name = 'chat_sessions' AND tc.constraint_type = 'FOREIGN KEY'
+            SELECT constraint_name FROM information_schema.table_constraints
+            WHERE table_name = 'chat_sessions' AND constraint_type = 'FOREIGN KEY'
         """)
-        fk_constraints = [dict(row) for row in cursor.fetchall()]
+        fk_constraints = cursor.fetchall()
 
+        for fk in fk_constraints:
+            constraint_name = fk['constraint_name']
+            cursor.execute(f"ALTER TABLE chat_sessions DROP CONSTRAINT {constraint_name}")
+            actions.append(f"Dropped constraint: {constraint_name}")
+
+        # Alter user_id to VARCHAR(255) if it's UUID
+        cursor.execute("""
+            SELECT data_type FROM information_schema.columns
+            WHERE table_name = 'chat_sessions' AND column_name = 'user_id'
+        """)
+        col_type = cursor.fetchone()
+        if col_type and col_type['data_type'] == 'uuid':
+            cursor.execute("ALTER TABLE chat_sessions ALTER COLUMN user_id TYPE VARCHAR(255) USING user_id::text")
+            actions.append("Changed user_id from UUID to VARCHAR(255)")
+
+        conn.commit()
         release_db_connection(conn)
-        return {"users": users, "fk_constraints": fk_constraints, "status": "success"}
+        return {"actions": actions, "status": "success"}
     except Exception as e:
         import traceback
         error_detail = traceback.format_exc()
