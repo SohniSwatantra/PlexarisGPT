@@ -2,7 +2,7 @@
 Plexaris API - Unified Backend
 Consolidated from Main App, Supplier Portal, and Customer Portal
 """
-from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
@@ -22,7 +22,8 @@ from datetime import datetime
 
 from lib.rag_handler import handle_rag_query
 from lib.supplier_rag_handler import handle_supplier_rag_query
-from lib.product_handler import get_products, search_products, create_product, update_product, delete_product, update_product_stock
+from lib.product_handler import get_products, search_products, create_product, update_product, delete_product, update_product_stock, bulk_create_products, generate_embeddings_for_products
+from lib.excel_importer import parse_excel_file, get_import_summary
 from lib.supplier_handler import get_all_suppliers, get_supplier_by_id
 from lib.user_handler import get_user_by_id
 from lib.order_handler import create_order, get_user_orders, get_supplier_orders, get_order_by_id
@@ -721,6 +722,106 @@ async def create_product_endpoint(product_data: dict):
         return await create_product(product_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/products/import")
+async def import_products_from_excel(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    supplier_id: str = None
+):
+    """
+    Import products from an Excel file (.xlsx).
+
+    The Excel file should have a header row with column names.
+    Recognized columns: name (required), category, description, price, stock_quantity, image_url, source_url
+
+    Products will be created in the database and embeddings will be generated asynchronously
+    for RAG search functionality.
+    """
+    # Validate file type
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+
+    if not file.filename.lower().endswith(('.xlsx', '.xls')):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file type. Please upload an Excel file (.xlsx or .xls)"
+        )
+
+    # Validate supplier_id
+    if not supplier_id:
+        raise HTTPException(status_code=400, detail="supplier_id is required")
+
+    # Check file size (max 10MB)
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    file_content = await file.read()
+
+    if len(file_content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large. Maximum size is 10MB, got {len(file_content) / 1024 / 1024:.1f}MB"
+        )
+
+    if len(file_content) == 0:
+        raise HTTPException(status_code=400, detail="Empty file provided")
+
+    try:
+        # Parse Excel file
+        logger.info(f"Parsing Excel file: {file.filename} ({len(file_content)} bytes)")
+        valid_products, parse_errors = parse_excel_file(file_content)
+
+        if not valid_products and parse_errors:
+            return {
+                "success": False,
+                "message": "Failed to parse Excel file",
+                "errors": parse_errors,
+                "products_created": 0
+            }
+
+        if not valid_products:
+            return {
+                "success": False,
+                "message": "No valid products found in Excel file",
+                "errors": parse_errors,
+                "products_created": 0
+            }
+
+        logger.info(f"Parsed {len(valid_products)} valid products, {len(parse_errors)} errors")
+
+        # Bulk create products
+        result = await bulk_create_products(valid_products, supplier_id)
+
+        # Schedule embedding generation as background task
+        if result.get("created"):
+            product_ids = [p["id"] for p in result["created"]]
+            background_tasks.add_task(generate_embeddings_for_products, product_ids)
+            logger.info(f"Scheduled embedding generation for {len(product_ids)} products")
+
+        # Combine parse errors with creation errors
+        all_errors = parse_errors + result.get("errors", [])
+
+        # Generate summary
+        summary = get_import_summary(
+            result.get("created_count", 0),
+            len(all_errors),
+            all_errors
+        )
+
+        return {
+            "success": True,
+            "message": result.get("message", "Import completed"),
+            "products_created": result.get("created_count", 0),
+            "products_failed": len(all_errors),
+            "summary": summary,
+            "created_products": result.get("created", [])[:20],  # Return first 20 for preview
+            "embeddings_status": "generating" if result.get("created") else "none"
+        }
+
+    except Exception as e:
+        logger.error(f"Excel import failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+
 
 @app.put("/api/products/{product_id}")
 async def update_product_endpoint(product_id: str, product_data: dict):
