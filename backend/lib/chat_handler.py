@@ -305,12 +305,11 @@ def update_session_title(session_id: str, user_id: str, title: str) -> bool:
 def delete_chat_session(session_id: str, user_id: str) -> bool:
     """
     Permanently delete a chat session and its messages.
-    Optimized: Combined verification and deletion in single transaction.
-    
+
     Args:
         session_id: UUID of the chat session
         user_id: UUID of the user (for verification)
-    
+
     Returns:
         True if successful, False otherwise
     """
@@ -318,25 +317,24 @@ def delete_chat_session(session_id: str, user_id: str) -> bool:
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        # Optimized: Delete messages and session in one transaction with verification
-        # This is faster than separate queries
+
+        # First delete messages associated with this session
         cursor.execute("""
-            WITH deleted_session AS (
-                DELETE FROM chat_sessions 
-                WHERE id = %s AND user_id = %s
-                RETURNING id
-            )
-            DELETE FROM chat_messages 
-            WHERE session_id IN (SELECT id FROM deleted_session)
+            DELETE FROM chat_messages
+            WHERE session_id = %s
+        """, (session_id,))
+
+        # Then delete the session itself (with user verification)
+        cursor.execute("""
+            DELETE FROM chat_sessions
+            WHERE id = %s AND user_id = %s
         """, (session_id, user_id))
-        
-        # Check if session was actually deleted (verification)
-        rows_deleted = cursor.rowcount
+
+        # Check if session was actually deleted
+        session_deleted = cursor.rowcount > 0
         conn.commit()
-        
-        # If no rows deleted, session didn't exist or user doesn't own it
-        return rows_deleted > 0
+
+        return session_deleted
     except Exception as e:
         logger.error(f"Failed to delete chat session: {str(e)}")
         if conn:

@@ -145,7 +145,11 @@ function ChatContent() {
 
   const deleteSession = useCallback(async (sessionToDelete) => {
     try {
-      await fetch(`/api/chat/sessions/${sessionToDelete}?userId=${internalUserId}`, { method: 'DELETE' });
+      const response = await fetch(`/api/chat/sessions/${sessionToDelete}?userId=${internalUserId}`, { method: 'DELETE' });
+      if (!response.ok) {
+        console.error('Delete session failed with status:', response.status);
+        return;
+      }
       const updated = await loadSessions();
       if (sessionId === sessionToDelete) {
         if (updated.length > 0) {
